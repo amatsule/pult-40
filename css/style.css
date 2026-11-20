@@ -35,10 +35,18 @@ body {
   display: none !important;
 }
 
+button,
+select,
+label,
+canvas {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .bunker-shell {
   max-width: 1420px;
   margin: 0 auto;
-  padding: 10px 14px 16px;
+  padding: max(10px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1089,10 +1097,136 @@ body {
   color: #c0d1cb;
 }
 
-/* Адаптивность для экранов поменьше */
-@media (max-width: 1060px) {
+/* Адаптивность для планшетов и сенсорных экранов */
+.modal-box {
+  max-height: 92vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Планшет в альбомной (горизонтальной) ориентации: карта и пульт рядом */
+@media (max-width: 1180px) and (min-width: 860px) {
+  .bunker-shell {
+    gap: 8px;
+  }
+
+  .top-bar {
+    padding: 6px 10px;
+    gap: 8px;
+  }
+
+  .brand-title {
+    font-size: 17px;
+  }
+
+  .meter-box {
+    min-width: 78px;
+    padding: 3px 8px;
+  }
+
+  .meter-value {
+    font-size: 16px;
+  }
+
+  .panic-box {
+    min-width: 145px;
+  }
+
+  .desk-grid {
+    grid-template-columns: 1.02fr 1fr;
+    gap: 8px;
+  }
+
+  .panel {
+    padding: 8px;
+  }
+
+  .dispatch-body {
+    min-height: 82px;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .event-log-list {
+    max-height: 62px;
+  }
+}
+
+/* Планшет в портретной (вертикальной) ориентации */
+@media (max-width: 859px) {
   .desk-grid {
     grid-template-columns: 1fr;
+  }
+
+  .top-bar {
+    justify-content: center;
+  }
+
+  .telemetry-strip {
+    justify-content: center;
+  }
+
+  .top-actions {
+    justify-content: center;
+  }
+}
+
+/* Сенсорные экраны (iPad / Android-планшеты): крупные зоны нажатия и защита от авто-зума */
+@media (pointer: coarse) {
+  .hw-btn {
+    min-height: 44px;
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+
+  .small-btn {
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+
+  .mini-link-btn,
+  .mini-test-btn {
+    min-height: 36px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .crt-select {
+    font-size: 16px;
+    min-height: 44px;
+    padding: 8px 10px;
+  }
+
+  .launch-btn {
+    min-height: 54px;
+    font-size: 16px;
+    padding: 14px 16px;
+  }
+
+  .toggle-track {
+    width: 58px;
+    height: 32px;
+    border-radius: 16px;
+  }
+
+  .toggle-lever {
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+  }
+
+  .hw-toggle input:checked + .toggle-track .toggle-lever {
+    transform: translateX(26px);
+  }
+
+  .tower-diag {
+    flex-wrap: wrap;
+  }
+
+  .diag-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 

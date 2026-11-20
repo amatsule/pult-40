@@ -56,11 +56,14 @@ window.CityMap = (function () {
   }
 
   function findTowerAt(x, y, state) {
+    const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
     for (const d of window.GAME_DATA.DISTRICTS) {
       for (const t of d.towers) {
         const dist = Math.hypot(x - t.x, y - t.y);
         const towerState = state.towers[t.id];
-        const hitRadius = (towerState && towerState.status !== 'ok') ? 20 : 12;
+        const hitRadius = (towerState && towerState.status !== 'ok')
+          ? (isTouch ? 30 : 20)
+          : (isTouch ? 18 : 12);
         if (dist <= hitRadius) {
           return { tower: t, district: d, state: towerState };
         }
