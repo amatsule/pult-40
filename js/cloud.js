@@ -179,8 +179,10 @@ window.CloudService = (function () {
     const clean = sanitizeCallsign(newCallsign, currentUser.email);
     const { data, error } = await client
       .from('profiles')
-      .update({ callsign: clean, updated_at: new Date().toISOString() })
-      .eq('id', currentUser.id)
+      .upsert(
+        { id: currentUser.id, callsign: clean, updated_at: new Date().toISOString() },
+        { onConflict: 'id' }
+      )
       .select()
       .single();
 
