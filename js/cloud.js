@@ -22,6 +22,10 @@ window.CloudService = (function () {
     return currentProfile;
   }
 
+  function isAdmin() {
+    return Boolean(currentProfile && currentProfile.is_admin === true);
+  }
+
   function sanitizeCallsign(raw, email) {
     const cleaned = String(raw || '').trim().slice(0, 24);
     if (cleaned.length >= 2) return cleaned;
@@ -278,6 +282,71 @@ window.CloudService = (function () {
     return { rows: data || [], kind: 'runs' };
   }
 
+  // --- ФУНКЦИИ АДМИНИСТРАТОРА И ПРИКАЗ ШТАБА ---
+  async function fetchAnnouncement() {
+    if (!client) return '';
+    const { data, error } = await client
+      .from('hq_announcement')
+      .select('message')
+      .eq('id', 1)
+      .maybeSingle();
+    if (error || !data) return '';
+    return data.message || '';
+  }
+
+  async function saveAnnouncement(message) {
+    if (!client || !isAdmin()) return { error: 'Требуются права администратора.' };
+    const clean = String(message || '').trim().slice(0, 220);
+    const { error } = await client
+      .from('hq_announcement')
+      .upsert({ id: 1, message: clean, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+    if (error) return { error: error.message };
+    return { ok: true, message: clean };
+  }
+
+  async function deleteLeaderboardRun(runId) {
+    if (!client || !isAdmin()) return { error: 'Требуются права администратора.' };
+    const { error } = await client
+      .from('leaderboard_runs')
+      .delete()
+      .eq('id', runId);
+    if (error) return { error: error.message };
+    return { ok: true };
+  }
+
+  async function fetchAllProfiles() {
+    if (!client || !isAdmin()) return { error: 'Требуются права администратора.', rows: [] };
+    const { data, error } = await client
+      .from('profiles')
+      .select('id, callsign, score, best_shift_score, total_perfect, is_admin, updated_at')
+      .order('score', { ascending: false })
+      .limit(50);
+    if (error) return { error: error.message, rows: [] };
+    return { rows: data || [] };
+  }
+
+  async function adminUpdateProfile(profileId, { callsign, score }) {
+    if (!client || !isAdmin()) return { error: 'Требуются права администратора.' };
+    const updates = { updated_at: new Date().toISOString() };
+    if (typeof callsign === 'string' && callsign.trim().length >= 2) {
+      updates.callsign = callsign.trim().slice(0, 24);
+    }
+    if (typeof score === 'number' && !Number.isNaN(score)) {
+      updates.score = Math.max(0, Math.round(score));
+    }
+    const { data, error } = await client
+      .from('profiles')
+      .update(updates)
+      .eq('id', profileId)
+      .select()
+      .single();
+    if (error) return { error: error.message };
+    if (currentUser && profileId === currentUser.id && data) {
+      currentProfile = data;
+    }
+    return { ok: true, profile: data };
+  }
+
   function translateAuthError(msg) {
     const m = String(msg || '').toLowerCase();
     if (m.includes('invalid login credentials')) return 'Неверный email или пароль.';
@@ -292,6 +361,7 @@ window.CloudService = (function () {
     isAvailable,
     getUser,
     getProfile,
+    isAdmin,
     init,
     signUp,
     signIn,
@@ -300,6 +370,11 @@ window.CloudService = (function () {
     scheduleSyncProfile,
     syncProfileNow,
     submitShiftRun,
-    fetchLeaderboard
+    fetchLeaderboard,
+    fetchAnnouncement,
+    saveAnnouncement,
+    deleteLeaderboardRun,
+    fetchAllProfiles,
+    adminUpdateProfile
   };
 })();

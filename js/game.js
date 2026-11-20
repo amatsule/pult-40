@@ -43,7 +43,8 @@
   function cacheDom() {
     const ids = [
       'alarmLamp', 'difficultyBadge', 'shiftTitle', 'shiftTimer', 'scoreValue', 'panicText', 'panicBar',
-      'handledCount', 'btnSound', 'btnVoice', 'btnUpgrades', 'btnLeaderboard', 'btnAuth', 'btnManual',
+      'handledCount', 'btnSound', 'btnVoice', 'btnUpgrades', 'btnLeaderboard', 'btnAuth', 'btnAdmin', 'btnManual',
+      'hqBanner', 'hqBannerText',
       'cityMap', 'selectedDistrictsText', 'btnClearDistricts',
       'towerDiagPanel', 'diagText', 'diagActions', 'btnRebootTower', 'btnDispatchCrew',
       'eventLog', 'dispatchPanel', 'dispatchTimerLabel', 'dispatchTimerBar',
@@ -52,7 +53,7 @@
       'tvScreen', 'tvNormalView', 'tvEmergencyView', 'tvChannel', 'tvIcon', 'tvTitle',
       'tvTickerText', 'tvInterceptSwitch', 'tvSwitchState',
       'msgSlot1', 'msgSlot2', 'msgSlot3', 'msgPreviewText', 'btnBroadcast',
-      'startModal', 'btnStartAuth', 'btnStartLb', 'difficultyButtons', 'difficultyDesc', 'shiftButtons', 'btnStartShift',
+      'startModal', 'btnStartAuth', 'btnStartLb', 'btnStartAdmin', 'difficultyButtons', 'difficultyDesc', 'shiftButtons', 'btnStartShift',
       'summaryModal', 'summaryBadge', 'summaryTitle', 'summaryText', 'summaryStats',
       'btnSummaryMenu', 'btnSummaryUpgrades', 'btnNextShift',
       'upgradesModal', 'upgradeBudget', 'upgradesGrid', 'btnCloseUpgrades',
@@ -63,7 +64,12 @@
       'profileEmail', 'profileBestShift', 'profileCallsignInput', 'btnSaveCallsign',
       'profileMsg', 'btnLogout', 'btnCloseAuthLogged', 'btnCloseAuth',
       'leaderboardModal', 'btnRefreshLb', 'lbTabs', 'lbStatus', 'lbHead', 'lbBody',
-      'lbGuestBanner', 'btnLbOpenAuth', 'btnCloseLeaderboard'
+      'lbGuestBanner', 'btnLbOpenAuth', 'btnCloseLeaderboard',
+      'adminModal', 'adminTabs', 'adminTabDebug', 'adminTabUsers', 'adminTabHq',
+      'admSpawnReal', 'admSpawnDrill', 'admSpawnHoax', 'admSpawnBreak',
+      'admAddScore', 'admResetPanic', 'admFixTowers', 'admFinishShift', 'adminDebugMsg',
+      'adminUsersStatus', 'btnAdmRefreshUsers', 'adminUsersBody', 'adminUsersMsg',
+      'adminHqInput', 'btnAdmSaveHq', 'btnAdmClearHq', 'adminHqMsg', 'btnCloseAdmin'
     ];
     ids.forEach((id) => { el[id] = document.getElementById(id); });
   }
@@ -346,12 +352,15 @@
   }
 
   // --- ДОНЕСЕНИЯ ---
-  function pickNextIncident() {
+  function pickNextIncident(forceType = null) {
     const shift = window.GAME_DATA.SHIFTS[state.shiftIndex];
-    const roll = Math.random();
-    let poolType = 'real';
-    if (roll < shift.hoaxChance) poolType = 'hoax';
-    else if (roll < shift.hoaxChance + shift.drillChance) poolType = 'drill';
+    let poolType = forceType;
+    if (!poolType) {
+      const roll = Math.random();
+      poolType = 'real';
+      if (roll < shift.hoaxChance) poolType = 'hoax';
+      else if (roll < shift.hoaxChance + shift.drillChance) poolType = 'drill';
+    }
 
     let candidates = window.GAME_DATA.INCIDENTS.filter(
       (i) => i.type === poolType && !state.recentIncidentIds.includes(i.id)
@@ -365,10 +374,10 @@
     return chosen;
   }
 
-  function spawnIncident() {
+  function spawnIncident(forceType = null) {
     const shift = window.GAME_DATA.SHIFTS[state.shiftIndex];
     const diff = getDiff();
-    const inc = pickNextIncident();
+    const inc = pickNextIncident(forceType);
     state.activeIncident = inc;
     const bonusTime = hasUpgrade('loud_towers') ? 6 : 0;
     state.incidentMaxTime = Math.max(15, shift.baseResponseTime + diff.timeDelta + bonusTime);
@@ -1225,7 +1234,8 @@
           `;
         }).join('');
       } else {
-        el.lbHead.innerHTML = '<tr><th>#</th><th>Позывной</th><th>Сложность</th><th>Смена</th><th>Идеально</th><th>Очки</th></tr>';
+        const isAdm = window.CloudService && window.CloudService.isAdmin();
+        el.lbHead.innerHTML = `<tr><th>#</th><th>Позывной</th><th>Сложность</th><th>Смена</th><th>Идеально</th><th>Очки</th>${isAdm ? '<th></th>' : ''}</tr>`;
         if (res.rows.length === 0) {
           el.lbStatus.textContent = 'В этой категории пока нет записей. Завершите смену первым!';
           return;
@@ -1234,6 +1244,9 @@
         el.lbBody.innerHTML = res.rows.map((r, i) => {
           const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
           const isMe = myId && r.user_id === myId;
+          const delCol = isAdm
+            ? `<td><button class="lb-del-btn" data-del-run="${r.id}" title="Удалить запись">🗑️</button></td>`
+            : '';
           return `
             <tr class="${isMe ? 'lb-me' : ''}">
               <td>${rank}</td>
@@ -1242,9 +1255,27 @@
               <td>№${r.shift_number}</td>
               <td>${r.perfect_count}/${r.handled_count}</td>
               <td class="lb-score-cell">+${r.shift_score} ★</td>
+              ${delCol}
             </tr>
           `;
         }).join('');
+
+        if (isAdm) {
+          el.lbBody.querySelectorAll('[data-del-run]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+              const runId = Number(btn.dataset.delRun);
+              btn.disabled = true;
+              const delRes = await window.CloudService.deleteLeaderboardRun(runId);
+              if (delRes && delRes.ok) {
+                window.SoundEngine.playClick();
+                loadLeaderboard(currentLbTab);
+              } else {
+                btn.disabled = false;
+                el.lbStatus.textContent = `Ошибка удаления: ${delRes?.error || 'нет прав'}`;
+              }
+            });
+          });
+        }
       }
     }
 
@@ -1280,8 +1311,218 @@
       openAuthModal();
     });
 
+    // --- ПРИКАЗ ШТАБА (ГЛОБАЛЬНЫЙ БАННЕР) ---
+    function applyHqBanner(message) {
+      const text = String(message || '').trim();
+      if (text) {
+        el.hqBannerText.textContent = text;
+        el.hqBanner.classList.remove('hidden');
+      } else {
+        el.hqBannerText.textContent = '';
+        el.hqBanner.classList.add('hidden');
+      }
+      if (el.adminHqInput) el.adminHqInput.value = text;
+    }
+
+    // --- ПАНЕЛЬ АДМИНИСТРАТОРА (НАЧАЛЬНИК ГО) ---
+    function showAdminMsg(targetEl, text, isErr = false) {
+      targetEl.textContent = text;
+      targetEl.className = `auth-msg ${isErr ? 'err' : 'ok'}`;
+    }
+
+    function switchAdminTab(tabName) {
+      el.adminTabs.querySelectorAll('.admin-tab').forEach((b) => {
+        b.classList.toggle('active', b.dataset.atab === tabName);
+      });
+      el.adminTabDebug.classList.toggle('hidden', tabName !== 'debug');
+      el.adminTabUsers.classList.toggle('hidden', tabName !== 'users');
+      el.adminTabHq.classList.toggle('hidden', tabName !== 'hq');
+      if (tabName === 'users') loadAdminUsers();
+    }
+
+    async function loadAdminUsers() {
+      el.adminUsersStatus.textContent = 'Загрузка списка дежурных...';
+      el.adminUsersBody.innerHTML = '';
+      el.adminUsersMsg.classList.add('hidden');
+
+      const res = await window.CloudService.fetchAllProfiles();
+      if (res.error) {
+        el.adminUsersStatus.textContent = `Ошибка: ${res.error}`;
+        return;
+      }
+      el.adminUsersStatus.textContent = `Всего дежурных: ${res.rows.length}`;
+      el.adminUsersBody.innerHTML = res.rows.map((u) => `
+        <tr data-uid="${u.id}">
+          <td>
+            <input type="text" class="adm-inline-input adm-callsign" value="${escapeHtml(u.callsign)}" maxlength="24" />
+            ${u.is_admin ? '<small style="color:#ff7a7a">ADMIN</small>' : ''}
+          </td>
+          <td><input type="number" class="adm-inline-input adm-inline-num adm-score" value="${u.score || 0}" min="0" /></td>
+          <td>${u.best_shift_score || 0} ★</td>
+          <td style="white-space:nowrap;">
+            <button class="hw-btn small-btn action-cyan adm-save-u" type="button">Сохр.</button>
+            <button class="hw-btn small-btn danger-outline adm-zero-u" type="button" title="Обнулить очки">0</button>
+          </td>
+        </tr>
+      `).join('');
+
+      el.adminUsersBody.querySelectorAll('tr').forEach((tr) => {
+        const uid = tr.dataset.uid;
+        const inpName = tr.querySelector('.adm-callsign');
+        const inpScore = tr.querySelector('.adm-score');
+        const btnSave = tr.querySelector('.adm-save-u');
+        const btnZero = tr.querySelector('.adm-zero-u');
+
+        btnSave.addEventListener('click', async () => {
+          btnSave.disabled = true;
+          const upd = await window.CloudService.adminUpdateProfile(uid, {
+            callsign: inpName.value,
+            score: Number(inpScore.value)
+          });
+          btnSave.disabled = false;
+          if (upd.error) {
+            showAdminMsg(el.adminUsersMsg, `Ошибка: ${upd.error}`, true);
+          } else {
+            window.SoundEngine.playSuccess();
+            showAdminMsg(el.adminUsersMsg, `Профиль «${upd.profile.callsign}» обновлён (${upd.profile.score} ★).`);
+            const curUser = window.CloudService.getUser();
+            if (curUser && curUser.id === uid) {
+              state.score = upd.profile.score;
+              updateHUD();
+            }
+          }
+        });
+
+        btnZero.addEventListener('click', () => {
+          inpScore.value = 0;
+          btnSave.click();
+        });
+      });
+    }
+
+    const openAdminModal = () => {
+      if (!window.CloudService || !window.CloudService.isAdmin()) return;
+      window.SoundEngine.playClick();
+      state.paused = true;
+      el.adminDebugMsg.classList.add('hidden');
+      el.adminHqMsg.classList.add('hidden');
+      el.adminModal.classList.remove('hidden');
+      switchAdminTab('debug');
+    };
+
+    if (el.btnAdmin) el.btnAdmin.addEventListener('click', openAdminModal);
+    if (el.btnStartAdmin) el.btnStartAdmin.addEventListener('click', openAdminModal);
+    el.btnCloseAdmin.addEventListener('click', () => {
+      window.SoundEngine.playClick();
+      el.adminModal.classList.add('hidden');
+      state.paused = false;
+    });
+
+    el.adminTabs.querySelectorAll('.admin-tab').forEach((b) => {
+      b.addEventListener('click', () => {
+        window.SoundEngine.playClick();
+        switchAdminTab(b.dataset.atab);
+      });
+    });
+
+    el.btnAdmRefreshUsers.addEventListener('click', () => {
+      window.SoundEngine.playClick();
+      loadAdminUsers();
+    });
+
+    // Кнопки отладки смены
+    function adminSpawnHelper(type, label) {
+      if (!state.running) {
+        showAdminMsg(el.adminDebugMsg, 'Сначала нажмите «Заступить на смену»!', true);
+        return;
+      }
+      el.adminModal.classList.add('hidden');
+      state.paused = false;
+      spawnIncident(type);
+      addLog(`[АДМИН] Принудительно запущено событие: ${label}.`, 'warn');
+    }
+
+    el.admSpawnReal.addEventListener('click', () => adminSpawnHelper('real', 'Реальная угроза'));
+    el.admSpawnDrill.addEventListener('click', () => adminSpawnHelper('drill', 'Плановая проверка'));
+    el.admSpawnHoax.addEventListener('click', () => adminSpawnHelper('hoax', 'Ложный вызов'));
+
+    el.admSpawnBreak.addEventListener('click', () => {
+      if (!state.running) {
+        showAdminMsg(el.adminDebugMsg, 'Сначала нажмите «Заступить на смену»!', true);
+        return;
+      }
+      triggerRandomBreakdown(false);
+      showAdminMsg(el.adminDebugMsg, 'Вызвана поломка случайной вышки на карте!');
+    });
+
+    el.admAddScore.addEventListener('click', () => {
+      window.SoundEngine.playSuccess();
+      state.score += 500;
+      saveProgress();
+      updateHUD();
+      showAdminMsg(el.adminDebugMsg, `Выдано +500 ★! Текущий бюджет: ${state.score} ★.`);
+    });
+
+    el.admResetPanic.addEventListener('click', () => {
+      window.SoundEngine.playSuccess();
+      state.panic = 0;
+      updateHUD();
+      showAdminMsg(el.adminDebugMsg, 'Паника в городе сброшена до 0%.');
+    });
+
+    el.admFixTowers.addEventListener('click', () => {
+      window.SoundEngine.playSuccess();
+      Object.values(state.towers).forEach((t) => {
+        t.status = 'ok';
+        t.faultType = null;
+        t.progress = 0;
+      });
+      state.selectedTowerId = null;
+      updateTowerDiagUI();
+      showAdminMsg(el.adminDebugMsg, 'Все 12 вышек связи мгновенно восстановлены!');
+    });
+
+    el.admFinishShift.addEventListener('click', () => {
+      if (!state.running) {
+        showAdminMsg(el.adminDebugMsg, 'Сейчас нет активной смены.', true);
+        return;
+      }
+      el.adminModal.classList.add('hidden');
+      state.paused = false;
+      state.shiftTimeLeft = 0;
+      endShift(true);
+    });
+
+    // Приказ Штаба
+    el.btnAdmSaveHq.addEventListener('click', async () => {
+      const msg = el.adminHqInput.value.trim();
+      const res = await window.CloudService.saveAnnouncement(msg);
+      if (res.error) {
+        showAdminMsg(el.adminHqMsg, `Ошибка: ${res.error}`, true);
+      } else {
+        window.SoundEngine.playSuccess();
+        applyHqBanner(res.message);
+        showAdminMsg(el.adminHqMsg, res.message ? 'Приказ Штаба опубликован для всех игроков!' : 'Объявление скрыто.');
+      }
+    });
+
+    el.btnAdmClearHq.addEventListener('click', async () => {
+      el.adminHqInput.value = '';
+      const res = await window.CloudService.saveAnnouncement('');
+      if (res.error) {
+        showAdminMsg(el.adminHqMsg, `Ошибка: ${res.error}`, true);
+      } else {
+        applyHqBanner('');
+        showAdminMsg(el.adminHqMsg, 'Объявление скрыто.');
+      }
+    });
+
     // Реакция на вход/выход в облаке
     window._onCloudAuthChange = function (user, profile) {
+      const isAdm = Boolean(user && profile && profile.is_admin === true);
+      if (el.btnAdmin) el.btnAdmin.classList.toggle('hidden', !isAdm);
+      if (el.btnStartAdmin) el.btnStartAdmin.classList.toggle('hidden', !isAdm);
+
       if (user && profile) {
         el.btnAuth.textContent = `👤 ${profile.callsign}`;
         el.btnAuth.classList.add('active');
@@ -1311,7 +1552,7 @@
             difficulty: state.difficulty
           });
         }
-        addLog(`Облачный профиль подключён: ${profile.callsign} (${state.score} ★).`, 'ok');
+        addLog(`Облачный профиль подключён: ${profile.callsign}${isAdm ? ' [АДМИН]' : ''} (${state.score} ★).`, 'ok');
       } else {
         el.btnAuth.textContent = '👤 Войти';
         el.btnAuth.classList.remove('active');
@@ -1322,6 +1563,8 @@
         updateAuthModalView();
       }
     };
+
+    window._applyHqBanner = applyHqBanner;
   }
 
   function init() {
@@ -1336,6 +1579,12 @@
     if (window.CloudService) {
       window.CloudService.init((user, profile) => {
         if (window._onCloudAuthChange) window._onCloudAuthChange(user, profile);
+      }).then((ok) => {
+        if (ok) {
+          window.CloudService.fetchAnnouncement().then((msg) => {
+            if (window._applyHqBanner) window._applyHqBanner(msg);
+          });
+        }
       });
     }
 
