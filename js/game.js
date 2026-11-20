@@ -6,6 +6,7 @@
   const state = {
     running: false,
     paused: false,
+    difficulty: 'medium', // 'easy' | 'medium' | 'hard'
     shiftIndex: 0,
     shiftTimeLeft: 300,
     score: 0,
@@ -41,7 +42,7 @@
 
   function cacheDom() {
     const ids = [
-      'alarmLamp', 'shiftTitle', 'shiftTimer', 'scoreValue', 'panicText', 'panicBar',
+      'alarmLamp', 'difficultyBadge', 'shiftTitle', 'shiftTimer', 'scoreValue', 'panicText', 'panicBar',
       'handledCount', 'btnSound', 'btnVoice', 'btnUpgrades', 'btnManual',
       'cityMap', 'selectedDistrictsText', 'btnClearDistricts',
       'towerDiagPanel', 'diagText', 'diagActions', 'btnRebootTower', 'btnDispatchCrew',
@@ -51,13 +52,25 @@
       'tvScreen', 'tvNormalView', 'tvEmergencyView', 'tvChannel', 'tvIcon', 'tvTitle',
       'tvTickerText', 'tvInterceptSwitch', 'tvSwitchState',
       'msgSlot1', 'msgSlot2', 'msgSlot3', 'msgPreviewText', 'btnBroadcast',
-      'startModal', 'shiftButtons', 'btnStartShift',
+      'startModal', 'difficultyButtons', 'difficultyDesc', 'shiftButtons', 'btnStartShift',
       'summaryModal', 'summaryBadge', 'summaryTitle', 'summaryText', 'summaryStats',
-      'btnSummaryUpgrades', 'btnNextShift',
+      'btnSummaryMenu', 'btnSummaryUpgrades', 'btnNextShift',
       'upgradesModal', 'upgradeBudget', 'upgradesGrid', 'btnCloseUpgrades',
       'manualModal', 'btnCloseManual'
     ];
     ids.forEach((id) => { el[id] = document.getElementById(id); });
+  }
+
+  function getDiff() {
+    return window.GAME_DATA.DIFFICULTIES[state.difficulty] || window.GAME_DATA.DIFFICULTIES.medium;
+  }
+
+  function scalePanic(baseAmount) {
+    return Math.max(1, Math.round(baseAmount * getDiff().panicMult));
+  }
+
+  function scaleScore(baseAmount) {
+    return Math.max(5, Math.round(baseAmount * getDiff().scoreMult));
   }
 
   function loadSave() {
@@ -67,6 +80,9 @@
       const data = JSON.parse(raw);
       if (typeof data.score === 'number') state.score = data.score;
       if (Array.isArray(data.upgrades)) state.upgrades = data.upgrades;
+      if (data.difficulty && window.GAME_DATA.DIFFICULTIES[data.difficulty]) {
+        state.difficulty = data.difficulty;
+      }
     } catch (_) {}
   }
 
@@ -74,7 +90,8 @@
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         score: state.score,
-        upgrades: state.upgrades
+        upgrades: state.upgrades,
+        difficulty: state.difficulty
       }));
     } catch (_) {}
   }
@@ -154,6 +171,11 @@
   }
 
   function updateHUD() {
+    const diff = getDiff();
+    if (el.difficultyBadge) {
+      el.difficultyBadge.textContent = diff.badge;
+      el.difficultyBadge.className = `diff-badge diff-${diff.id}`;
+    }
     el.shiftTimer.textContent = formatTime(state.shiftTimeLeft);
     el.scoreValue.textContent = state.score;
     const p = Math.max(0, Math.min(100, Math.round(state.panic)));
@@ -282,16 +304,18 @@
   }
 
   function triggerRandomBreakdown(forceStorm = false) {
+    const diff = getDiff();
     const okTowers = Object.values(state.towers).filter((t) => t.status === 'ok');
     if (okTowers.length === 0) return;
-    // Не ломаем больше 2 вышек одновременно
     const brokenCount = Object.values(state.towers).filter((t) => t.status !== 'ok').length;
-    if (brokenCount >= 2) return;
+    if (brokenCount >= diff.maxBrokenTowers) return;
 
     const target = okTowers[Math.floor(Math.random() * okTowers.length)];
-    const isHardware = forceStorm
-      ? (!hasUpgrade('backup_generator') && Math.random() < 0.7)
-      : Math.random() < 0.45;
+    const isHardware = diff.hardwareFaultChance <= 0
+      ? false
+      : forceStorm
+        ? (!hasUpgrade('backup_generator') && Math.random() < Math.min(0.9, diff.hardwareFaultChance + 0.25))
+        : Math.random() < diff.hardwareFaultChance;
 
     target.status = 'broken';
     target.faultType = isHardware ? 'hardware' : 'software';
@@ -328,10 +352,11 @@
 
   function spawnIncident() {
     const shift = window.GAME_DATA.SHIFTS[state.shiftIndex];
+    const diff = getDiff();
     const inc = pickNextIncident();
     state.activeIncident = inc;
     const bonusTime = hasUpgrade('loud_towers') ? 6 : 0;
-    state.incidentMaxTime = shift.baseResponseTime + bonusTime;
+    state.incidentMaxTime = Math.max(15, shift.baseResponseTime + diff.timeDelta + bonusTime);
     state.incidentTimeLeft = state.incidentMaxTime;
 
     el.alarmLamp.classList.add('flashing');
@@ -346,8 +371,8 @@
 
     // Шанс поломки вышки во время грозового донесения
     if (inc.weatherStorm) {
-      const chance = hasUpgrade('satellite_link') ? 0.28 : 0.6;
-      if (Math.random() < chance) {
+      const baseChance = hasUpgrade('satellite_link') ? 0.28 : 0.6;
+      if (Math.random() < Math.min(0.9, baseChance * diff.breakdownMult)) {
         setTimeout(() => {
           if (state.running && !state.paused) triggerRandomBreakdown(true);
         }, 1800);
@@ -356,8 +381,27 @@
   }
 
   function renderDispatchCard(inc) {
+    const diff = getDiff();
     let bodyHtml = inc.text;
     let sourceClass = 'dispatch-source';
+
+    // На простом уровне подсвечиваем нужные районы в тексте
+    if (diff.showHints && inc.districts && inc.districts.length > 0) {
+      const stems = {
+        center: ['ЦЕНТР[А-ЯЁ]*'],
+        factory: ['ЗАВОДСК[А-ЯЁ]*'],
+        port: ['ПОРТ[А-ЯЁ]*'],
+        forest: ['ЛЕСН[А-ЯЁ]*'],
+        residential: ['СПАЛЬН[А-ЯЁ]*'],
+        airport: ['АЭРОПОРТ[А-ЯЁ]*']
+      };
+      inc.districts.forEach((dId) => {
+        (stems[dId] || []).forEach((pattern) => {
+          const re = new RegExp(`(${pattern})`, 'g');
+          bodyHtml = bodyHtml.replace(re, '<span class="district-hl">$1</span>');
+        });
+      });
+    }
 
     // Если куплен Анализатор помех — подсвечиваем подозрительные слова в розыгрышах
     if (inc.type === 'hoax' && hasUpgrade('spam_filter')) {
@@ -374,6 +418,17 @@
       ? '<span style="color:#ffcf5c">⚠ ПОДОЗРИТЕЛЬНЫЙ КАНАЛ</span>'
       : '<span>ПРИОРИТЕТ: ВЫСОКИЙ</span>';
 
+    let easyHintHtml = '';
+    if (diff.showHints) {
+      if (inc.type === 'real') {
+        easyHintHtml = '<div class="easy-hint-bar">💡 Подсказка стажёру: 📢 Протяжный ревун + 📺 Перехват ТВ ВКЛ</div>';
+      } else if (inc.type === 'drill') {
+        easyHintHtml = '<div class="easy-hint-bar">💡 Подсказка стажёру: 🔔 Короткие гудки + 📺 Перехват ТВ ВЫКЛ</div>';
+      } else if (inc.type === 'hoax') {
+        easyHintHtml = '<div class="easy-hint-bar">💡 Подсказка стажёру: похоже на шутку — нажмите «Отклонить»!</div>';
+      }
+    }
+
     el.dispatchContent.innerHTML = `
       <div class="dispatch-meta">
         <span class="${sourceClass}">${inc.source}</span>
@@ -381,6 +436,7 @@
       </div>
       <div class="dispatch-title">${inc.title}</div>
       <div>${bodyHtml}</div>
+      ${easyHintHtml}
     `;
   }
 
@@ -401,7 +457,8 @@
 
     const shift = window.GAME_DATA.SHIFTS[state.shiftIndex];
     const [minI, maxI] = shift.incidentInterval;
-    state.nextIncidentIn = minI * 0.45 + Math.random() * ((maxI - minI) * 0.55);
+    const baseWait = minI * 0.45 + Math.random() * ((maxI - minI) * 0.55);
+    state.nextIncidentIn = Math.max(2.5, baseWait * getDiff().intervalMult);
   }
 
   // --- ОБРАБОТКА НАЖАТИЯ «В ЭФИР» ---
@@ -426,9 +483,10 @@
       setTimeout(() => window.SoundEngine.playError(), 500);
 
       state.score = Math.max(0, state.score - 70);
-      state.panic = Math.min(100, state.panic + 18);
+      const hoaxPanic = scalePanic(18);
+      state.panic = Math.min(100, state.panic + hoaxPanic);
       state.mistakesCount++;
-      addLog('ОШИБКА! Это был ЛОЖНЫЙ ВЫЗОВ (розыгрыш)! -70 очков, +18% паники.', 'err');
+      addLog(`ОШИБКА! Это был ЛОЖНЫЙ ВЫЗОВ (розыгрыш)! -70 очков, +${hoaxPanic}% паники.`, 'err');
       clearActiveIncident();
       scheduleResetControls();
       saveProgress();
@@ -517,6 +575,7 @@
     const speedBonus = Math.round((state.incidentTimeLeft / state.incidentMaxTime) * 40);
     let earned = Math.max(20, 160 + speedBonus - penaltyPts);
     if (hasUpgrade('loud_towers')) earned = Math.round(earned * 1.2);
+    earned = scaleScore(earned);
 
     state.handledCount++;
 
@@ -530,10 +589,11 @@
     } else {
       state.mistakesCount++;
       const net = Math.max(10, earned);
+      const scaledPanic = scalePanic(panicAdd);
       state.score += net;
       state.shiftScoreEarned += net;
-      state.panic = Math.min(100, state.panic + panicAdd);
-      addLog(`Оповещение с ошибками (+${net} оч., +${panicAdd}% паники): ${issues.join('; ')}.`, 'warn');
+      state.panic = Math.min(100, state.panic + scaledPanic);
+      addLog(`Оповещение с ошибками (+${net} оч., +${scaledPanic}% паники): ${issues.join('; ')}.`, 'warn');
     }
 
     clearActiveIncident();
@@ -565,7 +625,7 @@
     state.handledCount++;
 
     if (inc.type === 'hoax') {
-      const reward = hasUpgrade('loud_towers') ? 110 : 90;
+      const reward = scaleScore(hasUpgrade('loud_towers') ? 110 : 90);
       state.score += reward;
       state.shiftScoreEarned += reward;
       state.perfectCount++;
@@ -574,10 +634,11 @@
       addLog(`БРАВО! Ложный вызов «${inc.title}» отклонён. +${reward} очков!`, 'ok');
     } else {
       state.score = Math.max(0, state.score - 80);
-      state.panic = Math.min(100, state.panic + 22);
+      const rejectPanic = scalePanic(22);
+      state.panic = Math.min(100, state.panic + rejectPanic);
       state.mistakesCount++;
       window.SoundEngine.playError();
-      addLog(`ТРЕВОГА ПРОПУЩЕНА! Вы отклонили реальное донесение! -80 очков, +22% паники.`, 'err');
+      addLog(`ТРЕВОГА ПРОПУЩЕНА! Вы отклонили реальное донесение! -80 очков, +${rejectPanic}% паники.`, 'err');
     }
 
     clearActiveIncident();
@@ -613,8 +674,9 @@
 
     initTowers();
     clearActiveIncident();
+    const diff = getDiff();
     state.nextIncidentIn = 2.8;
-    state.nextBreakdownIn = hasUpgrade('satellite_link') ? 45 : 24;
+    state.nextBreakdownIn = Math.max(12, (hasUpgrade('satellite_link') ? 45 : 24) / diff.breakdownMult);
 
     el.shiftTitle.textContent = shift.title;
     el.startModal.classList.add('hidden');
@@ -625,7 +687,7 @@
 
     updateTVScreen();
     updateHUD();
-    addLog(`Заступление на ${shift.title}. Удачного дежурства!`, 'ok');
+    addLog(`Заступление на ${shift.title} (режим: ${diff.name}). Удачного дежурства!`, 'ok');
   }
 
   function endShift(success) {
@@ -751,11 +813,13 @@
         state.nextBreakdownIn -= dt;
         if (state.nextBreakdownIn <= 0) {
           const shift = window.GAME_DATA.SHIFTS[state.shiftIndex];
-          const mod = hasUpgrade('satellite_link') ? 0.5 : 1.0;
-          if (Math.random() < shift.breakdownChance * mod) {
+          const diff = getDiff();
+          const mod = (hasUpgrade('satellite_link') ? 0.5 : 1.0) * diff.breakdownMult;
+          if (Math.random() < Math.min(0.92, shift.breakdownChance * mod)) {
             triggerRandomBreakdown(false);
           }
-          state.nextBreakdownIn = (hasUpgrade('satellite_link') ? 38 : 22) + Math.random() * 14;
+          const baseCd = hasUpgrade('satellite_link') ? 38 : 22;
+          state.nextBreakdownIn = Math.max(11, (baseCd + Math.random() * 14) / diff.breakdownMult);
         }
 
         // Активное донесение или ожидание нового
@@ -773,10 +837,11 @@
               addLog('Ложный вызов оборвался сам. Совет: отклоняйте их вручную за бонус!', 'info');
             } else {
               state.score = Math.max(0, state.score - 90);
-              state.panic = Math.min(100, state.panic + 25);
+              const timeoutPanic = scalePanic(25);
+              state.panic = Math.min(100, state.panic + timeoutPanic);
               state.mistakesCount++;
               window.SoundEngine.playError();
-              addLog(`ВРЕМЯ ВЫШЛО! Вы не успели оповестить город о «${inc.title}»! -90 оч., +25% паники.`, 'err');
+              addLog(`ВРЕМЯ ВЫШЛО! Вы не успели оповестить город о «${inc.title}»! -90 оч., +${timeoutPanic}% паники.`, 'err');
               saveProgress();
               checkPanicGameOver();
             }
@@ -905,6 +970,36 @@
       el.manualModal.classList.add('hidden');
       state.paused = false;
     });
+
+    // Выбор сложности на стартовом экране
+    function renderDifficultySelector() {
+      el.difficultyButtons.innerHTML = '';
+      Object.values(window.GAME_DATA.DIFFICULTIES).forEach((d) => {
+        const btn = document.createElement('button');
+        btn.className = `hw-btn diff-choice-btn diff-${d.id} ${state.difficulty === d.id ? 'active' : ''}`;
+        btn.innerHTML = `${d.badge}<small>${d.subtitle}</small>`;
+        btn.addEventListener('click', () => {
+          window.SoundEngine.ensureContext();
+          window.SoundEngine.playClick();
+          state.difficulty = d.id;
+          saveProgress();
+          renderDifficultySelector();
+          updateHUD();
+        });
+        el.difficultyButtons.appendChild(btn);
+      });
+      el.difficultyDesc.textContent = getDiff().desc;
+    }
+    renderDifficultySelector();
+
+    if (el.btnSummaryMenu) {
+      el.btnSummaryMenu.addEventListener('click', () => {
+        window.SoundEngine.playClick();
+        el.summaryModal.classList.add('hidden');
+        renderDifficultySelector();
+        el.startModal.classList.remove('hidden');
+      });
+    }
 
     // Выбор смены на стартовом экране
     window.GAME_DATA.SHIFTS.forEach((sh, idx) => {

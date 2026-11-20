@@ -435,12 +435,62 @@ window.GAME_DATA = (function () {
     { channel: '3 КАНАЛ', title: '«В МИРЕ ЖИВОТНЫХ»', color: '#3b4d2b', icon: '🦊' }
   ];
 
+  // Режимы сложности
+  const DIFFICULTIES = {
+    easy: {
+      id: 'easy',
+      name: 'Простой',
+      subtitle: 'Стажёр',
+      badge: '🟢 ПРОСТОЙ',
+      desc: 'Таймер +15 сек, подсказки районов и сигнала, редкие поломки (всегда чинятся перезагрузкой), мягкая паника, очки ×0.8.',
+      timeDelta: 15,
+      intervalMult: 1.4,
+      breakdownMult: 0.5,
+      maxBrokenTowers: 1,
+      hardwareFaultChance: 0,
+      panicMult: 0.6,
+      scoreMult: 0.8,
+      showHints: true
+    },
+    medium: {
+      id: 'medium',
+      name: 'Средний',
+      subtitle: 'Дежурный',
+      badge: '🟡 СРЕДНИЙ',
+      desc: 'Классический режим: 30–35 сек на реакцию, сбои и обрывы кабеля, стандартные штрафы и награды (×1.0).',
+      timeDelta: 0,
+      intervalMult: 1.0,
+      breakdownMult: 1.0,
+      maxBrokenTowers: 2,
+      hardwareFaultChance: 0.45,
+      panicMult: 1.0,
+      scoreMult: 1.0,
+      showHints: false
+    },
+    hard: {
+      id: 'hard',
+      name: 'Сложный',
+      subtitle: 'Аврал',
+      badge: '🔴 СЛОЖНЫЙ',
+      desc: 'Цейтнот (20–22 сек), плотный поток вызовов, до 3 поломок сразу, паника ×1.35 — зато награда ×1.5!',
+      timeDelta: -10,
+      intervalMult: 0.65,
+      breakdownMult: 1.5,
+      maxBrokenTowers: 3,
+      hardwareFaultChance: 0.68,
+      panicMult: 1.35,
+      scoreMult: 1.5,
+      showHints: false
+    }
+  };
+
   return {
     DISTRICTS,
     MESSAGE_BLOCKS,
     INCIDENTS,
     UPGRADES,
     SHIFTS,
+    DIFFICULTIES,
     TV_PROGRAMS
   };
 })();

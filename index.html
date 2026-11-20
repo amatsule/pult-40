@@ -20,7 +20,10 @@
           <div class="lamp-dome"></div>
         </div>
         <div class="brand-text">
-          <div class="brand-title">ПУЛЬТ-40 <span class="badge-s40">АСЦО-88</span></div>
+          <div class="brand-title">
+            ПУЛЬТ-40 <span class="badge-s40">АСЦО-88</span>
+            <span id="difficultyBadge" class="diff-badge diff-medium">🟡 СРЕДНИЙ</span>
+          </div>
           <div id="shiftTitle" class="brand-sub">СМЕНА №1 — Вводное дежурство</div>
         </div>
       </div>
@@ -236,6 +239,12 @@
         <div class="b-step"><strong>⚠ Будьте бдительны:</strong> чините красные вышки («Нет связи») и отклоняйте ложные розыгрыши!</div>
       </div>
 
+      <div class="difficulty-selector">
+        <label>УРОВЕНЬ СЛОЖНОСТИ:</label>
+        <div id="difficultyButtons" class="diff-btn-row"></div>
+        <div id="difficultyDesc" class="diff-desc"></div>
+      </div>
+
       <div class="shift-selector">
         <label>ВЫБЕРИТЕ СМЕНУ:</label>
         <div id="shiftButtons" class="shift-btn-row"></div>
@@ -253,6 +262,7 @@
       <p id="summaryText" class="modal-desc"></p>
       <div id="summaryStats" class="summary-stats"></div>
       <div class="modal-actions">
+        <button id="btnSummaryMenu" class="hw-btn">⚙ Сложность</button>
         <button id="btnSummaryUpgrades" class="hw-btn action-amber">🔧 Прокачать пульт</button>
         <button id="btnNextShift" class="launch-btn">▶ Следующая смена</button>
       </div>
