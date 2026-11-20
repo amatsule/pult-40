@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="ПУЛЬТ-40" />
   <title>ПУЛЬТ-40 — Симулятор системы оповещения</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=4" />
 </head>
 <body>
   <div class="bunker-shell">
@@ -227,8 +227,16 @@
   <!-- МОДАЛЬНОЕ ОКНО: СТАРТ СМЕНЫ -->
   <div id="startModal" class="modal-backdrop">
     <div class="modal-box">
-      <div class="modal-badge">СЕКРЕТНЫЙ ОБЪЕКТ // БУНКЕР ДЕЖУРНОГО</div>
-      <h1 class="modal-title">ПУЛЬТ-40</h1>
+      <div class="start-top-row">
+        <div>
+          <div class="modal-badge">СЕКРЕТНЫЙ ОБЪЕКТ // БУНКЕР ДЕЖУРНОГО</div>
+          <h1 class="modal-title" style="margin-bottom: 4px;">ПУЛЬТ-40</h1>
+        </div>
+        <div class="start-account-btns">
+          <button id="btnStartAuth" class="hw-btn small-btn action-cyan" type="button">👤 Войти</button>
+          <button id="btnStartLb" class="hw-btn small-btn action-amber" type="button">🏆 Лидеры</button>
+        </div>
+      </div>
       <p class="modal-desc">
         Добро пожаловать на пост оперативного дежурного! Вы управляете городской системой оповещения на базе легендарных советских сирен <strong>С-40</strong>.
       </p>
@@ -425,10 +433,10 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/data.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/cloud.js"></script>
-  <script src="js/map.js"></script>
-  <script src="js/game.js"></script>
+  <script src="js/data.js?v=4"></script>
+  <script src="js/audio.js?v=4"></script>
+  <script src="js/cloud.js?v=4"></script>
+  <script src="js/map.js?v=4"></script>
+  <script src="js/game.js?v=4"></script>
 </body>
 </html>

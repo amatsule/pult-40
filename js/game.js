@@ -52,7 +52,7 @@
       'tvScreen', 'tvNormalView', 'tvEmergencyView', 'tvChannel', 'tvIcon', 'tvTitle',
       'tvTickerText', 'tvInterceptSwitch', 'tvSwitchState',
       'msgSlot1', 'msgSlot2', 'msgSlot3', 'msgPreviewText', 'btnBroadcast',
-      'startModal', 'difficultyButtons', 'difficultyDesc', 'shiftButtons', 'btnStartShift',
+      'startModal', 'btnStartAuth', 'btnStartLb', 'difficultyButtons', 'difficultyDesc', 'shiftButtons', 'btnStartShift',
       'summaryModal', 'summaryBadge', 'summaryTitle', 'summaryText', 'summaryStats',
       'btnSummaryMenu', 'btnSummaryUpgrades', 'btnNextShift',
       'upgradesModal', 'upgradeBudget', 'upgradesGrid', 'btnCloseUpgrades',
@@ -1107,6 +1107,7 @@
     }
 
     el.btnAuth.addEventListener('click', openAuthModal);
+    if (el.btnStartAuth) el.btnStartAuth.addEventListener('click', openAuthModal);
     el.btnCloseAuth.addEventListener('click', closeAuthModal);
     el.btnCloseAuthLogged.addEventListener('click', closeAuthModal);
     el.tabLogin.addEventListener('click', () => { window.SoundEngine.playClick(); setAuthMode('login'); });
@@ -1247,12 +1248,14 @@
       }
     }
 
-    el.btnLeaderboard.addEventListener('click', () => {
+    const openLeaderboardModal = () => {
       window.SoundEngine.playClick();
       state.paused = true;
       el.leaderboardModal.classList.remove('hidden');
       loadLeaderboard(currentLbTab);
-    });
+    };
+    el.btnLeaderboard.addEventListener('click', openLeaderboardModal);
+    if (el.btnStartLb) el.btnStartLb.addEventListener('click', openLeaderboardModal);
 
     el.btnCloseLeaderboard.addEventListener('click', () => {
       window.SoundEngine.playClick();
@@ -1282,6 +1285,10 @@
       if (user && profile) {
         el.btnAuth.textContent = `👤 ${profile.callsign}`;
         el.btnAuth.classList.add('active');
+        if (el.btnStartAuth) {
+          el.btnStartAuth.textContent = `👤 ${profile.callsign}`;
+          el.btnStartAuth.classList.add('active');
+        }
 
         // Мягко объединяем локальный и облачный прогресс, чтобы ничего не потерять
         const mergedUpgrades = Array.from(new Set([...(state.upgrades || []), ...(profile.upgrades || [])]));
@@ -1308,6 +1315,10 @@
       } else {
         el.btnAuth.textContent = '👤 Войти';
         el.btnAuth.classList.remove('active');
+        if (el.btnStartAuth) {
+          el.btnStartAuth.textContent = '👤 Войти';
+          el.btnStartAuth.classList.remove('active');
+        }
         updateAuthModalView();
       }
     };

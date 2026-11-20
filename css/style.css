@@ -1222,6 +1222,26 @@ canvas {
 }
 
 /* --- АВТОРИЗАЦИЯ И ПРОФИЛЬ --- */
+#authModal,
+#leaderboardModal {
+  z-index: 120;
+}
+
+.start-top-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.start-account-btns {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .auth-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
