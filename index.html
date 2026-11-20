@@ -53,6 +53,8 @@
         <button id="btnSound" class="hw-btn small-btn active" title="Включить/выключить звук">🔊 Звук</button>
         <button id="btnVoice" class="hw-btn small-btn active" title="Озвучка громкоговорителя">🗣️ Диктор</button>
         <button id="btnUpgrades" class="hw-btn small-btn upgrade-btn">🔧 Прокачка</button>
+        <button id="btnLeaderboard" class="hw-btn small-btn">🏆 Лидеры</button>
+        <button id="btnAuth" class="hw-btn small-btn">👤 Войти</button>
         <button id="btnManual" class="hw-btn small-btn">📖 Регламент</button>
       </div>
     </header>
@@ -315,8 +317,117 @@
     </div>
   </div>
 
+  <!-- МОДАЛЬНОЕ ОКНО: АВТОРИЗАЦИЯ И ПРОФИЛЬ -->
+  <div id="authModal" class="modal-backdrop hidden">
+    <div class="modal-box">
+      <div class="modal-badge">ОБЛАЧНЫЙ ДОСТУП // ПРОФИЛЬ ДЕЖУРНОГО</div>
+      <h2 class="modal-title">АККАУНТ «ПУЛЬТ-40»</h2>
+
+      <!-- Форма входа / регистрации -->
+      <div id="authGuestView">
+        <p class="modal-desc">
+          Войдите, чтобы сохранять очки и прокачку между ПК и планшетом, а также попадать в общую <strong>Таблицу лидеров</strong>. Текущий локальный прогресс сохранится!
+        </p>
+        <div class="auth-tabs">
+          <button id="tabLogin" class="hw-btn auth-tab active" type="button">Вход</button>
+          <button id="tabRegister" class="hw-btn auth-tab" type="button">Регистрация</button>
+        </div>
+        <form id="authForm" class="auth-form">
+          <div id="callsignField" class="form-field hidden">
+            <label for="inputCallsign">ПОЗЫВНОЙ (НИК В РЕЙТИНГЕ):</label>
+            <input id="inputCallsign" type="text" class="crt-input" maxlength="24" placeholder="Например: Дежурный-40" />
+          </div>
+          <div class="form-field">
+            <label for="inputEmail">EMAIL:</label>
+            <input id="inputEmail" type="email" class="crt-input" required placeholder="name@example.com" />
+          </div>
+          <div class="form-field">
+            <label for="inputPassword">ПАРОЛЬ (МИНИМУМ 6 СИМВОЛОВ):</label>
+            <input id="inputPassword" type="password" class="crt-input" required minlength="6" placeholder="••••••" />
+          </div>
+          <div id="authMessage" class="auth-msg hidden"></div>
+          <button id="btnAuthSubmit" type="submit" class="launch-btn">▶ ВОЙТИ В СИСТЕМУ</button>
+        </form>
+      </div>
+
+      <!-- Профиль авторизованного пользователя -->
+      <div id="authProfileView" class="hidden">
+        <div class="profile-card">
+          <div class="profile-row">
+            <span class="profile-lbl">СТАТУС:</span>
+            <span class="mono-green">☁️ ОБЛАКО ПОДКЛЮЧЕНО</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-lbl">EMAIL:</span>
+            <span id="profileEmail">—</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-lbl">ЛУЧШАЯ СМЕНА:</span>
+            <span id="profileBestShift" class="mono-amber">0 ★</span>
+          </div>
+          <div class="form-field" style="margin-top: 8px;">
+            <label for="profileCallsignInput">ПОЗЫВНОЙ В ТАБЛИЦЕ ЛИДЕРОВ:</label>
+            <div class="rename-row">
+              <input id="profileCallsignInput" type="text" class="crt-input" maxlength="24" />
+              <button id="btnSaveCallsign" type="button" class="hw-btn action-cyan">Сохранить</button>
+            </div>
+          </div>
+          <div id="profileMsg" class="auth-msg hidden"></div>
+        </div>
+        <div class="modal-actions" style="margin-top: 14px; justify-content: space-between;">
+          <button id="btnLogout" type="button" class="hw-btn danger-outline">Выйти из аккаунта</button>
+          <button id="btnCloseAuthLogged" type="button" class="hw-btn">Закрыть</button>
+        </div>
+      </div>
+
+      <div id="authGuestFooter" class="modal-actions" style="margin-top: 12px;">
+        <button id="btnCloseAuth" type="button" class="hw-btn">Играть без входа</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: ТАБЛИЦА ЛИДЕРОВ -->
+  <div id="leaderboardModal" class="modal-backdrop hidden">
+    <div class="modal-box wide-modal">
+      <div class="modal-header-row">
+        <div>
+          <div class="modal-badge">РЕЙТИНГ ОПЕРАТОРОВ АСЦО</div>
+          <h2 class="modal-title">🏆 ТАБЛИЦА ЛИДЕРОВ</h2>
+        </div>
+        <button id="btnRefreshLb" class="hw-btn small-btn">🔄 Обновить</button>
+      </div>
+
+      <div id="lbTabs" class="lb-tabs">
+        <button class="hw-btn small-btn lb-tab active" data-lb="all">Все смены</button>
+        <button class="hw-btn small-btn lb-tab" data-lb="easy">🟢 Простой</button>
+        <button class="hw-btn small-btn lb-tab" data-lb="medium">🟡 Средний</button>
+        <button class="hw-btn small-btn lb-tab" data-lb="hard">🔴 Сложный</button>
+        <button class="hw-btn small-btn lb-tab" data-lb="profiles">⭐ Общие очки</button>
+      </div>
+
+      <div id="lbStatus" class="lb-status">Загрузка рейтинга...</div>
+      <div class="lb-table-wrap">
+        <table class="lb-table">
+          <thead id="lbHead"></thead>
+          <tbody id="lbBody"></tbody>
+        </table>
+      </div>
+
+      <div id="lbGuestBanner" class="lb-guest-banner hidden">
+        <span>Хотите попасть в таблицу лидеров?</span>
+        <button id="btnLbOpenAuth" class="hw-btn small-btn action-amber">👤 Войти / Регистрация</button>
+      </div>
+
+      <div class="modal-actions" style="margin-top: 12px;">
+        <button id="btnCloseLeaderboard" class="hw-btn">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/data.js"></script>
   <script src="js/audio.js"></script>
+  <script src="js/cloud.js"></script>
   <script src="js/map.js"></script>
   <script src="js/game.js"></script>
 </body>

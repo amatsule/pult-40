@@ -43,7 +43,7 @@
   function cacheDom() {
     const ids = [
       'alarmLamp', 'difficultyBadge', 'shiftTitle', 'shiftTimer', 'scoreValue', 'panicText', 'panicBar',
-      'handledCount', 'btnSound', 'btnVoice', 'btnUpgrades', 'btnManual',
+      'handledCount', 'btnSound', 'btnVoice', 'btnUpgrades', 'btnLeaderboard', 'btnAuth', 'btnManual',
       'cityMap', 'selectedDistrictsText', 'btnClearDistricts',
       'towerDiagPanel', 'diagText', 'diagActions', 'btnRebootTower', 'btnDispatchCrew',
       'eventLog', 'dispatchPanel', 'dispatchTimerLabel', 'dispatchTimerBar',
@@ -56,7 +56,14 @@
       'summaryModal', 'summaryBadge', 'summaryTitle', 'summaryText', 'summaryStats',
       'btnSummaryMenu', 'btnSummaryUpgrades', 'btnNextShift',
       'upgradesModal', 'upgradeBudget', 'upgradesGrid', 'btnCloseUpgrades',
-      'manualModal', 'btnCloseManual'
+      'manualModal', 'btnCloseManual',
+      'authModal', 'authGuestView', 'authProfileView', 'authGuestFooter',
+      'tabLogin', 'tabRegister', 'authForm', 'callsignField', 'inputCallsign',
+      'inputEmail', 'inputPassword', 'authMessage', 'btnAuthSubmit',
+      'profileEmail', 'profileBestShift', 'profileCallsignInput', 'btnSaveCallsign',
+      'profileMsg', 'btnLogout', 'btnCloseAuthLogged', 'btnCloseAuth',
+      'leaderboardModal', 'btnRefreshLb', 'lbTabs', 'lbStatus', 'lbHead', 'lbBody',
+      'lbGuestBanner', 'btnLbOpenAuth', 'btnCloseLeaderboard'
     ];
     ids.forEach((id) => { el[id] = document.getElementById(id); });
   }
@@ -94,6 +101,14 @@
         difficulty: state.difficulty
       }));
     } catch (_) {}
+
+    if (window.CloudService && window.CloudService.getUser()) {
+      window.CloudService.scheduleSyncProfile({
+        score: state.score,
+        upgrades: state.upgrades,
+        difficulty: state.difficulty
+      });
+    }
   }
 
   function hasUpgrade(id) {
@@ -722,6 +737,32 @@
     el.btnNextShift.onclick = () => startShift(nextIdx);
 
     saveProgress();
+
+    // Отправляем результат смены в облако и таблицу лидеров
+    if (window.CloudService && window.CloudService.getUser()) {
+      const shiftNum = window.GAME_DATA.SHIFTS[state.shiftIndex].number;
+      window.CloudService.syncProfileNow({
+        score: state.score,
+        bestShiftScore: state.shiftScoreEarned,
+        addPerfect: state.perfectCount,
+        upgrades: state.upgrades,
+        difficulty: state.difficulty
+      });
+      if (state.shiftScoreEarned > 0) {
+        window.CloudService.submitShiftRun({
+          shiftNumber: shiftNum,
+          difficulty: state.difficulty,
+          shiftScore: state.shiftScoreEarned,
+          perfectCount: state.perfectCount,
+          handledCount: state.handledCount
+        }).then((res) => {
+          if (res && res.ok) {
+            addLog(`Рекорд смены (+${state.shiftScoreEarned} оч.) отправлен в таблицу лидеров!`, 'ok');
+          }
+        });
+      }
+    }
+
     el.summaryModal.classList.remove('hidden');
   }
 
@@ -1016,6 +1057,260 @@
     });
 
     el.btnStartShift.addEventListener('click', () => startShift(state.shiftIndex));
+
+    // --- АВТОРИЗАЦИЯ И ПРОФИЛЬ ---
+    let authMode = 'login'; // 'login' | 'register'
+
+    function showAuthMsg(text, isError = false) {
+      el.authMessage.textContent = text;
+      el.authMessage.className = `auth-msg ${isError ? 'err' : 'ok'}`;
+    }
+
+    function setAuthMode(mode) {
+      authMode = mode;
+      el.tabLogin.classList.toggle('active', mode === 'login');
+      el.tabRegister.classList.toggle('active', mode === 'register');
+      el.callsignField.classList.toggle('hidden', mode !== 'register');
+      el.btnAuthSubmit.textContent = mode === 'login' ? '▶ ВОЙТИ В СИСТЕМУ' : '▶ СОЗДАТЬ АККАУНТ';
+      el.authMessage.classList.add('hidden');
+    }
+
+    function updateAuthModalView() {
+      const user = window.CloudService && window.CloudService.getUser();
+      const profile = window.CloudService && window.CloudService.getProfile();
+      if (user) {
+        el.authGuestView.classList.add('hidden');
+        el.authGuestFooter.classList.add('hidden');
+        el.authProfileView.classList.remove('hidden');
+        el.profileEmail.textContent = user.email || '—';
+        el.profileBestShift.textContent = `${profile?.best_shift_score || 0} ★`;
+        el.profileCallsignInput.value = profile?.callsign || '';
+        el.profileMsg.classList.add('hidden');
+      } else {
+        el.authGuestView.classList.remove('hidden');
+        el.authGuestFooter.classList.remove('hidden');
+        el.authProfileView.classList.add('hidden');
+      }
+    }
+
+    function openAuthModal() {
+      window.SoundEngine.playClick();
+      state.paused = true;
+      updateAuthModalView();
+      el.authModal.classList.remove('hidden');
+    }
+
+    function closeAuthModal() {
+      window.SoundEngine.playClick();
+      el.authModal.classList.add('hidden');
+      state.paused = false;
+    }
+
+    el.btnAuth.addEventListener('click', openAuthModal);
+    el.btnCloseAuth.addEventListener('click', closeAuthModal);
+    el.btnCloseAuthLogged.addEventListener('click', closeAuthModal);
+    el.tabLogin.addEventListener('click', () => { window.SoundEngine.playClick(); setAuthMode('login'); });
+    el.tabRegister.addEventListener('click', () => { window.SoundEngine.playClick(); setAuthMode('register'); });
+
+    el.authForm.addEventListener('submit', async (evt) => {
+      evt.preventDefault();
+      if (!window.CloudService || !window.CloudService.isAvailable()) {
+        showAuthMsg('Облачный сервис недоступен (проверьте интернет).', true);
+        return;
+      }
+      const email = el.inputEmail.value.trim();
+      const password = el.inputPassword.value;
+      const callsign = el.inputCallsign.value.trim();
+
+      el.btnAuthSubmit.disabled = true;
+      el.btnAuthSubmit.textContent = 'ПОДКЛЮЧЕНИЕ...';
+
+      const res = authMode === 'login'
+        ? await window.CloudService.signIn(email, password)
+        : await window.CloudService.signUp(email, password, callsign);
+
+      el.btnAuthSubmit.disabled = false;
+      setAuthMode(authMode);
+
+      if (res.error) {
+        showAuthMsg(res.error, true);
+      } else if (res.needsConfirm) {
+        showAuthMsg(res.message, false);
+      } else {
+        window.SoundEngine.playSuccess();
+        updateAuthModalView();
+      }
+    });
+
+    el.btnSaveCallsign.addEventListener('click', async () => {
+      const next = el.profileCallsignInput.value.trim();
+      if (next.length < 2) {
+        el.profileMsg.textContent = 'Позывной должен быть не короче 2 символов.';
+        el.profileMsg.className = 'auth-msg err';
+        return;
+      }
+      const res = await window.CloudService.updateCallsign(next);
+      if (res.error) {
+        el.profileMsg.textContent = res.error;
+        el.profileMsg.className = 'auth-msg err';
+      } else {
+        window.SoundEngine.playSuccess();
+        el.profileMsg.textContent = `Позывной обновлён: ${res.callsign}`;
+        el.profileMsg.className = 'auth-msg ok';
+      }
+    });
+
+    el.btnLogout.addEventListener('click', async () => {
+      window.SoundEngine.playClick();
+      await window.CloudService.signOut();
+      addLog('Вы вышли из облачного аккаунта. Включён локальный режим.', 'info');
+      updateAuthModalView();
+    });
+
+    // --- ТАБЛИЦА ЛИДЕРОВ ---
+    let currentLbTab = 'all';
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    async function loadLeaderboard(tabMode = currentLbTab) {
+      currentLbTab = tabMode;
+      el.lbTabs.querySelectorAll('.lb-tab').forEach((b) => {
+        b.classList.toggle('active', b.dataset.lb === tabMode);
+      });
+
+      const user = window.CloudService && window.CloudService.getUser();
+      el.lbGuestBanner.classList.toggle('hidden', Boolean(user));
+      el.lbStatus.textContent = 'Загрузка рейтинга...';
+      el.lbBody.innerHTML = '';
+
+      if (!window.CloudService || !window.CloudService.isAvailable()) {
+        el.lbStatus.textContent = 'Нет подключения к облаку.';
+        return;
+      }
+
+      const res = await window.CloudService.fetchLeaderboard(tabMode);
+      if (res.error) {
+        el.lbStatus.textContent = `Ошибка загрузки: ${res.error}`;
+        return;
+      }
+
+      const myId = user ? user.id : null;
+      const diffLabels = { easy: '🟢 Простой', medium: '🟡 Средний', hard: '🔴 Сложный' };
+
+      if (res.kind === 'profiles') {
+        el.lbHead.innerHTML = '<tr><th>#</th><th>Позывной</th><th>Лучшая смена</th><th>Идеальных</th><th>Бюджет ★</th></tr>';
+        if (res.rows.length === 0) {
+          el.lbStatus.textContent = 'Пока нет зарегистрированных дежурных. Станьте первым!';
+          return;
+        }
+        el.lbStatus.textContent = `Показано лучших дежурных: ${res.rows.length}`;
+        el.lbBody.innerHTML = res.rows.map((r, i) => {
+          const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
+          const isMe = myId && r.id === myId;
+          return `
+            <tr class="${isMe ? 'lb-me' : ''}">
+              <td>${rank}</td>
+              <td>${escapeHtml(r.callsign)}${isMe ? ' (вы)' : ''}</td>
+              <td>${r.best_shift_score || 0}</td>
+              <td>${r.total_perfect || 0}</td>
+              <td class="lb-score-cell">${r.score || 0} ★</td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        el.lbHead.innerHTML = '<tr><th>#</th><th>Позывной</th><th>Сложность</th><th>Смена</th><th>Идеально</th><th>Очки</th></tr>';
+        if (res.rows.length === 0) {
+          el.lbStatus.textContent = 'В этой категории пока нет записей. Завершите смену первым!';
+          return;
+        }
+        el.lbStatus.textContent = `Топ смен (${res.rows.length}):`;
+        el.lbBody.innerHTML = res.rows.map((r, i) => {
+          const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
+          const isMe = myId && r.user_id === myId;
+          return `
+            <tr class="${isMe ? 'lb-me' : ''}">
+              <td>${rank}</td>
+              <td>${escapeHtml(r.callsign)}${isMe ? ' (вы)' : ''}</td>
+              <td>${diffLabels[r.difficulty] || r.difficulty}</td>
+              <td>№${r.shift_number}</td>
+              <td>${r.perfect_count}/${r.handled_count}</td>
+              <td class="lb-score-cell">+${r.shift_score} ★</td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    el.btnLeaderboard.addEventListener('click', () => {
+      window.SoundEngine.playClick();
+      state.paused = true;
+      el.leaderboardModal.classList.remove('hidden');
+      loadLeaderboard(currentLbTab);
+    });
+
+    el.btnCloseLeaderboard.addEventListener('click', () => {
+      window.SoundEngine.playClick();
+      el.leaderboardModal.classList.add('hidden');
+      state.paused = false;
+    });
+
+    el.btnRefreshLb.addEventListener('click', () => {
+      window.SoundEngine.playClick();
+      loadLeaderboard(currentLbTab);
+    });
+
+    el.lbTabs.querySelectorAll('.lb-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        window.SoundEngine.playClick();
+        loadLeaderboard(btn.dataset.lb);
+      });
+    });
+
+    el.btnLbOpenAuth.addEventListener('click', () => {
+      el.leaderboardModal.classList.add('hidden');
+      openAuthModal();
+    });
+
+    // Реакция на вход/выход в облаке
+    window._onCloudAuthChange = function (user, profile) {
+      if (user && profile) {
+        el.btnAuth.textContent = `👤 ${profile.callsign}`;
+        el.btnAuth.classList.add('active');
+
+        // Мягко объединяем локальный и облачный прогресс, чтобы ничего не потерять
+        const mergedUpgrades = Array.from(new Set([...(state.upgrades || []), ...(profile.upgrades || [])]));
+        const mergedScore = Math.max(state.score || 0, profile.score || 0);
+        const changed = mergedScore !== profile.score || mergedUpgrades.length !== (profile.upgrades || []).length;
+
+        state.upgrades = mergedUpgrades;
+        state.score = mergedScore;
+        if (profile.difficulty && window.GAME_DATA.DIFFICULTIES[profile.difficulty]) {
+          state.difficulty = profile.difficulty;
+        }
+        renderDifficultySelector();
+        updateHUD();
+        updateAuthModalView();
+
+        if (changed) {
+          window.CloudService.syncProfileNow({
+            score: state.score,
+            upgrades: state.upgrades,
+            difficulty: state.difficulty
+          });
+        }
+        addLog(`Облачный профиль подключён: ${profile.callsign} (${state.score} ★).`, 'ok');
+      } else {
+        el.btnAuth.textContent = '👤 Войти';
+        el.btnAuth.classList.remove('active');
+        updateAuthModalView();
+      }
+    };
   }
 
   function init() {
@@ -1026,6 +1321,12 @@
     bindEvents();
     updateTVScreen();
     updateHUD();
+
+    if (window.CloudService) {
+      window.CloudService.init((user, profile) => {
+        if (window._onCloudAuthChange) window._onCloudAuthChange(user, profile);
+      });
+    }
 
     window.CityMap.init(
       el.cityMap,
