@@ -827,12 +827,13 @@ canvas {
 /* 3. КОНСТРУКТОР СООБЩЕНИЯ */
 .msg-builder-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 8px;
 }
 
 .msg-slot {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -845,6 +846,11 @@ canvas {
 }
 
 .crt-select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   background: #0d1a15;
   color: var(--crt-green);
   border: 1px solid #2c5240;
