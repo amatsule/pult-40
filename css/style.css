@@ -262,12 +262,13 @@ canvas {
 /* --- ОСНОВНАЯ СЕТКА РАБОЧЕГО СТОЛА --- */
 .desk-grid {
   display: grid;
-  grid-template-columns: 1.08fr 1fr;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
   gap: 12px;
   align-items: start;
 }
 
 .panel {
+  min-width: 0;
   background: linear-gradient(180deg, #21282b 0%, #171c1e 100%);
   border: 2px solid var(--panel-border);
   border-radius: 8px;
@@ -452,6 +453,7 @@ canvas {
 
 /* --- ПРАВАЯ КОЛОНКА --- */
 .controls-column {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -564,7 +566,7 @@ canvas {
 /* 2. ДВОЙНАЯ СТРОКА: СИРЕНЫ И ТВ */
 .dual-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
 }
 
@@ -652,6 +654,9 @@ canvas {
 
 /* МИНИ-ТЕЛЕВИЗОР ПЕРЕХВАТА */
 .tv-screen {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   height: 102px;
   border: 4px solid #101416;
   border-radius: 8px;
@@ -725,6 +730,9 @@ canvas {
 }
 
 .tv-ticker-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   background: #140202;
   border-top: 2px solid #ffcc00;
   overflow: hidden;
@@ -1133,7 +1141,7 @@ canvas {
   }
 
   .desk-grid {
-    grid-template-columns: 1.02fr 1fr;
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr);
     gap: 8px;
   }
 
