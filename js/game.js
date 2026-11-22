@@ -20,6 +20,7 @@
     sirenMode: 'long', // 'long' | 'short'
     sirenModel: 's40', // 's40' | 'tornado' | 'modern'
     tvIntercept: false,
+    kolaAlert: false,
 
     activeIncident: null,
     incidentTimeLeft: 0,
@@ -34,7 +35,8 @@
     upgrades: [], // ids of owned upgrades
     tvProgramIndex: 0,
     tvProgramTimer: 0,
-    tvResetTimeout: null
+    tvResetTimeout: null,
+    phoneAlertTimeout: null
   };
 
   // DOM элементы
@@ -52,6 +54,8 @@
       'btnModeLong', 'btnModeShort', 'modelS40', 'modelTornado', 'modelModern', 'btnTestSiren',
       'tvScreen', 'tvNormalView', 'tvEmergencyView', 'tvChannel', 'tvIcon', 'tvTitle',
       'tvTickerText', 'tvInterceptSwitch', 'tvSwitchState',
+      'kolaPanel', 'kolaTowerStatus', 'kolaAlertSwitch', 'kolaSwitchState',
+      'phoneAlertPopup', 'phoneAlertFrame', 'phoneClock', 'phoneAlertZones', 'phoneAlertText', 'btnClosePhoneAlert',
       'msgSlot1', 'msgSlot2', 'msgSlot3', 'msgPreviewText', 'btnBroadcast',
       'startModal', 'btnStartAuth', 'btnStartLb', 'btnStartAdmin', 'difficultyButtons', 'difficultyDesc', 'shiftButtons', 'btnStartShift',
       'summaryModal', 'summaryBadge', 'summaryTitle', 'summaryText', 'summaryStats',
@@ -221,6 +225,76 @@
     el.modelTornado.textContent = tornadoUnlocked ? '🌪️ Торнадо' : '🔒 Торнадо';
     el.modelModern.classList.toggle('locked', !modernUnlocked);
     el.modelModern.textContent = modernUnlocked ? '📡 Цифровая' : '🔒 Цифровая';
+    updateKolaAlertUI();
+  }
+
+  function getBrokenTowersInDistricts(districtIds) {
+    const broken = [];
+    districtIds.forEach((dId) => {
+      const dist = window.GAME_DATA.DISTRICTS.find((x) => x.id === dId);
+      if (!dist) return;
+      dist.towers.forEach((t) => {
+        const ts = state.towers[t.id];
+        if (ts && ts.status !== 'ok') {
+          broken.push(ts);
+        }
+      });
+    });
+    return broken;
+  }
+
+  function updateKolaAlertUI() {
+    if (!el.kolaSwitchState || !el.kolaTowerStatus || !el.kolaPanel) return;
+    el.kolaSwitchState.textContent = state.kolaAlert ? 'ВКЛ' : 'ВЫКЛ';
+    el.kolaSwitchState.classList.toggle('on', state.kolaAlert);
+
+    const broken = getBrokenTowersInDistricts(state.selectedDistricts);
+    el.kolaPanel.classList.remove('active-on', 'blocked');
+    el.kolaTowerStatus.classList.remove('ready', 'blocked');
+
+    if (state.selectedDistricts.length === 0) {
+      el.kolaTowerStatus.textContent = 'Выберите район на карте для сотовой рассылки';
+      if (state.kolaAlert) el.kolaPanel.classList.add('active-on');
+      return;
+    }
+
+    if (broken.length > 0) {
+      const names = broken.map((t) => t.name).join(', ');
+      el.kolaTowerStatus.textContent = `🔴 НЕТ СВЯЗИ (${names}) — Kola-Alert не сработает! Почините вышку.`;
+      el.kolaTowerStatus.classList.add('blocked');
+      el.kolaPanel.classList.add('blocked');
+    } else {
+      el.kolaTowerStatus.textContent = '🟢 Сотовые вышки в зоне в сети — готово к рассылке';
+      el.kolaTowerStatus.classList.add('ready');
+      if (state.kolaAlert) el.kolaPanel.classList.add('active-on');
+    }
+  }
+
+  function triggerPhoneKolaAlert(districtIds, messageText) {
+    if (!el.phoneAlertPopup) return;
+    const now = new Date();
+    const hhmm = now.toTimeString().slice(0, 5);
+    const zoneNames = districtIds.map((id) => {
+      const d = window.GAME_DATA.DISTRICTS.find((x) => x.id === id);
+      return d ? d.shortName : id;
+    });
+
+    el.phoneClock.textContent = hhmm;
+    el.phoneAlertZones.textContent = `Зона рассылки: ${zoneNames.join(', ')}`;
+    el.phoneAlertText.textContent = messageText;
+    el.phoneAlertPopup.classList.remove('hidden');
+
+    // Перезапускаем анимацию вибрации телефона
+    el.phoneAlertFrame.classList.remove('vibrating');
+    void el.phoneAlertFrame.offsetWidth;
+    el.phoneAlertFrame.classList.add('vibrating');
+
+    window.SoundEngine.playKolaAlert();
+
+    if (state.phoneAlertTimeout) clearTimeout(state.phoneAlertTimeout);
+    state.phoneAlertTimeout = setTimeout(() => {
+      el.phoneAlertPopup.classList.add('hidden');
+    }, 6000);
   }
 
   function updateTVScreen() {
@@ -249,6 +323,7 @@
       el.towerDiagPanel.className = 'tower-diag ok';
       el.diagText.textContent = 'ЛИНИЯ СВЯЗИ: ВСЕ 12 ВЫШЕК В СЕТИ (НОРМА)';
       el.diagActions.classList.add('hidden');
+      updateKolaAlertUI();
       return;
     }
 
@@ -268,6 +343,7 @@
       el.diagText.textContent = `⚠ НЕТ СВЯЗИ: ${focus.name} [${focus.districtName}] — ${faultDesc}`;
       el.diagActions.classList.remove('hidden');
     }
+    updateKolaAlertUI();
   }
 
   // --- ВЫБОР РАЙОНОВ И ВЫШЕК НА КАРТЕ ---
@@ -595,9 +671,30 @@
       panicAdd += inc.tvRequired ? 8 : 5;
     }
 
+    // 5. Сотовая рассылка Kola-Alert
+    let kolaBonus = 0;
+    if (state.kolaAlert) {
+      const brokenSelected = getBrokenTowersInDistricts(state.selectedDistricts);
+      if (brokenSelected.length > 0) {
+        const bNames = brokenSelected.map((t) => `${t.name} (${t.districtName})`).join(', ');
+        issues.push('Kola-Alert заблокирован поломкой вышки');
+        addLog(`❌ Kola-Alert НЕ СРАБОТАЛ: нет связи с сотовой вышкой ${bNames}! Почините её на карте.`, 'err');
+      } else {
+        triggerPhoneKolaAlert(state.selectedDistricts, getAssembledMessageText());
+        if (inc.type === 'real') {
+          kolaBonus = 30;
+          addLog('📱 Kola-Alert доставлен на телефоны жителей выбранных районов! (+30 бонус)', 'ok');
+        } else {
+          issues.push('зря включили Kola-Alert во время проверки');
+          penaltyPts += 15;
+          panicAdd += 4;
+        }
+      }
+    }
+
     // Итог расчёта
     const speedBonus = Math.round((state.incidentTimeLeft / state.incidentMaxTime) * 40);
-    let earned = Math.max(20, 160 + speedBonus - penaltyPts);
+    let earned = Math.max(20, 160 + speedBonus + kolaBonus - penaltyPts);
     if (hasUpgrade('loud_towers')) earned = Math.round(earned * 1.2);
     earned = scaleScore(earned);
 
@@ -635,6 +732,11 @@
         state.tvIntercept = false;
         el.tvInterceptSwitch.checked = false;
         updateTVScreen();
+      }
+      if (state.kolaAlert) {
+        state.kolaAlert = false;
+        if (el.kolaAlertSwitch) el.kolaAlertSwitch.checked = false;
+        updateKolaAlertUI();
       }
     }, 3200);
   }
@@ -694,6 +796,9 @@
     state.selectedDistricts = [];
     state.tvIntercept = false;
     el.tvInterceptSwitch.checked = false;
+    state.kolaAlert = false;
+    if (el.kolaAlertSwitch) el.kolaAlertSwitch.checked = false;
+    if (el.phoneAlertPopup) el.phoneAlertPopup.classList.add('hidden');
     state.recentIncidentIds = [];
 
     initTowers();
@@ -967,6 +1072,24 @@
       if (state.tvIntercept) window.SoundEngine.playTvIntercept();
       updateTVScreen();
     });
+
+    // Тумблер сотовой рассылки Kola-Alert
+    if (el.kolaAlertSwitch) {
+      el.kolaAlertSwitch.addEventListener('change', () => {
+        window.SoundEngine.ensureContext();
+        state.kolaAlert = el.kolaAlertSwitch.checked;
+        window.SoundEngine.playSwitch(state.kolaAlert);
+        updateKolaAlertUI();
+      });
+    }
+
+    if (el.btnClosePhoneAlert) {
+      el.btnClosePhoneAlert.addEventListener('click', () => {
+        window.SoundEngine.playClick();
+        el.phoneAlertPopup.classList.add('hidden');
+        if (state.phoneAlertTimeout) clearTimeout(state.phoneAlertTimeout);
+      });
+    }
 
     // Конструктор сообщений
     [el.msgSlot1, el.msgSlot2, el.msgSlot3].forEach((sel) => {

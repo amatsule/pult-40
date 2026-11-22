@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="ПУЛЬТ-40" />
   <title>ПУЛЬТ-40 — Симулятор системы оповещения</title>
-  <link rel="stylesheet" href="css/style.css?v=5" />
+  <link rel="stylesheet" href="css/style.css?v=6" />
 </head>
 <body>
   <div class="bunker-shell">
@@ -163,37 +163,59 @@
             </div>
           </div>
 
-          <!-- БЛОК ПЕРЕХВАТА ТВ И РАДИО -->
-          <div class="panel tv-panel">
-            <div class="panel-header">
-              <span>📺 ШАГ 4: ПЕРЕХВАТ ТВ И РАДИО</span>
-            </div>
-            <div id="tvScreen" class="tv-screen normal">
-              <div id="tvNormalView" class="tv-normal">
-                <div id="tvChannel" class="tv-channel">1 КАНАЛ</div>
-                <div id="tvIcon" class="tv-icon">📺</div>
-                <div id="tvTitle" class="tv-prog-title">МУЛЬТФИЛЬМ: «НУ, ПОГОДИ!»</div>
+          <!-- БЛОК ПЕРЕХВАТА ТВ И РАДИО + СОТОВАЯ РАССЫЛКА KOLA-ALERT -->
+          <div class="tv-kola-stack">
+            <div class="panel tv-panel">
+              <div class="panel-header">
+                <span>📺 ШАГ 4: ПЕРЕХВАТ ТВ И РАДИО</span>
               </div>
-              <div id="tvEmergencyView" class="tv-emergency hidden">
-                <div class="tv-em-header">⚠ ВНИМАНИЕ ВСЕМ! ⚠</div>
-                <div class="tv-em-sub">ЭКСТРЕННОЕ СООБЩЕНИЕ ГО И ЧС</div>
-                <div class="tv-ticker-wrap">
-                  <div id="tvTickerText" class="tv-ticker">
-                    ВНИМАНИЕ! СЛЕДУЙТЕ УКАЗАНИЯМ ДЕЖУРНОГО ПУЛЬТА-40!
+              <div id="tvScreen" class="tv-screen normal">
+                <div id="tvNormalView" class="tv-normal">
+                  <div id="tvChannel" class="tv-channel">1 КАНАЛ</div>
+                  <div id="tvIcon" class="tv-icon">📺</div>
+                  <div id="tvTitle" class="tv-prog-title">МУЛЬТФИЛЬМ: «НУ, ПОГОДИ!»</div>
+                </div>
+                <div id="tvEmergencyView" class="tv-emergency hidden">
+                  <div class="tv-em-header">⚠ ВНИМАНИЕ ВСЕМ! ⚠</div>
+                  <div class="tv-em-sub">ЭКСТРЕННОЕ СООБЩЕНИЕ ГО И ЧС</div>
+                  <div class="tv-ticker-wrap">
+                    <div id="tvTickerText" class="tv-ticker">
+                      ВНИМАНИЕ! СЛЕДУЙТЕ УКАЗАНИЯМ ДЕЖУРНОГО ПУЛЬТА-40!
+                    </div>
                   </div>
                 </div>
               </div>
+
+              <div class="toggle-row">
+                <span class="toggle-label">ТУМБЛЕР ПЕРЕХВАТА:</span>
+                <label class="hw-toggle" title="Прервать ТВ и радио красной заставкой">
+                  <input type="checkbox" id="tvInterceptSwitch" />
+                  <span class="toggle-track">
+                    <span class="toggle-lever"></span>
+                  </span>
+                  <span id="tvSwitchState" class="toggle-state">ВЫКЛ</span>
+                </label>
+              </div>
             </div>
 
-            <div class="toggle-row">
-              <span class="toggle-label">ТУМБЛЕР ПЕРЕХВАТА:</span>
-              <label class="hw-toggle" title="Прервать ТВ и радио красной заставкой">
-                <input type="checkbox" id="tvInterceptSwitch" />
-                <span class="toggle-track">
-                  <span class="toggle-lever"></span>
-                </span>
-                <span id="tvSwitchState" class="toggle-state">ВЫКЛ</span>
-              </label>
+            <!-- ШАГ 5: СОТОВАЯ РАССЫЛКА KOLA-ALERT -->
+            <div id="kolaPanel" class="panel kola-panel">
+              <div class="panel-header">
+                <span>📱 ШАГ 5: СОТОВАЯ РАССЫЛКА (KOLA-ALERT)</span>
+              </div>
+              <div id="kolaTowerStatus" class="kola-status">
+                Выберите район на карте для сотовой рассылки
+              </div>
+              <div class="toggle-row">
+                <span class="toggle-label">ТУМБЛЕР KOLA-ALERT:</span>
+                <label class="hw-toggle" title="Отправить экстренное оповещение на телефоны жителей">
+                  <input type="checkbox" id="kolaAlertSwitch" />
+                  <span class="toggle-track">
+                    <span class="toggle-lever"></span>
+                  </span>
+                  <span id="kolaSwitchState" class="toggle-state">ВЫКЛ</span>
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -523,11 +545,36 @@
     </div>
   </div>
 
+  <!-- ВСПЛЫВАЮЩЕЕ ОКНО ТЕЛЕФОНА: KOLA-ALERT -->
+  <div id="phoneAlertPopup" class="phone-alert-popup hidden" role="alertdialog" aria-live="assertive">
+    <div id="phoneAlertFrame" class="phone-frame">
+      <div class="phone-status-bar">
+        <span>KOLA-5G 📶</span>
+        <span id="phoneClock">12:00</span>
+        <span>🔋 94%</span>
+      </div>
+      <div class="phone-alert-card">
+        <div class="phone-alert-head">
+          <span class="phone-alert-tri">⚠️</span>
+          <div>
+            <div class="phone-alert-brand">KOLA-ALERT</div>
+            <div class="phone-alert-sub">ЭКСТРЕННОЕ ОПОВЕЩЕНИЕ ГО И ЧС</div>
+          </div>
+        </div>
+        <div id="phoneAlertZones" class="phone-alert-zones">Зона: ЦЕНТР</div>
+        <div id="phoneAlertText" class="phone-alert-text">
+          Внимание! Экстренное сообщение от дежурного «Пульт-40».
+        </div>
+        <button id="btnClosePhoneAlert" type="button" class="phone-ack-btn">ОК — ПРИНЯТО</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/data.js?v=5"></script>
-  <script src="js/audio.js?v=5"></script>
-  <script src="js/cloud.js?v=5"></script>
-  <script src="js/map.js?v=5"></script>
-  <script src="js/game.js?v=5"></script>
+  <script src="js/data.js?v=6"></script>
+  <script src="js/audio.js?v=6"></script>
+  <script src="js/cloud.js?v=6"></script>
+  <script src="js/map.js?v=6"></script>
+  <script src="js/game.js?v=6"></script>
 </body>
 </html>

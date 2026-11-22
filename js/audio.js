@@ -446,6 +446,58 @@ window.SoundEngine = (function () {
     }
   }
 
+  // Двухтональный сигнал сотового оповещения Kola-Alert (испанский ES-Alert: 853 Гц + 960 Гц) + вибрация
+  function playKolaAlert() {
+    if (navigator.vibrate) {
+      try {
+        navigator.vibrate([380, 140, 380, 140, 550]);
+      } catch (_) {}
+    }
+
+    const c = ensureContext();
+    if (!c || muted) return;
+    const now = c.currentTime;
+
+    // 3 резких двухтональных импульса (853 Hz + 960 Hz)
+    const bursts = [
+      { offset: 0.0, dur: 0.72 },
+      { offset: 0.92, dur: 0.52 },
+      { offset: 1.62, dur: 0.82 }
+    ];
+
+    bursts.forEach(({ offset, dur }) => {
+      const start = now + offset;
+      const oscA = c.createOscillator();
+      const oscB = c.createOscillator();
+      const filter = c.createBiquadFilter();
+      const gain = c.createGain();
+
+      oscA.type = 'sawtooth';
+      oscB.type = 'sawtooth';
+      oscA.frequency.setValueAtTime(853, start);
+      oscB.frequency.setValueAtTime(960, start);
+
+      filter.type = 'bandpass';
+      filter.frequency.value = 920;
+      filter.Q.value = 1.2;
+
+      gain.gain.setValueAtTime(0.001, start);
+      gain.gain.linearRampToValueAtTime(0.24, start + 0.02);
+      gain.gain.setValueAtTime(0.24, start + dur - 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
+
+      oscA.connect(filter);
+      oscB.connect(filter);
+      filter.connect(gain);
+      gain.connect(masterGain);
+
+      oscA.start(start);
+      oscB.start(start);
+      oscA.stop(start + dur + 0.02);
+      oscB.stop(start + dur + 0.02);
+    });
+  }
+
   return {
     ensureContext,
     setMuted,
@@ -457,6 +509,7 @@ window.SoundEngine = (function () {
     playSwitch,
     playAlarmBuzzer,
     playTvIntercept,
+    playKolaAlert,
     playSuccess,
     playError,
     playThunder,
