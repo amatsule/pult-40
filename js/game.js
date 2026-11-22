@@ -847,28 +847,26 @@
 
     if (success) {
       window.SoundEngine.playSuccess();
-      el.summaryBadge.textContent = 'СМЕНА УСПЕШНО ЗАВЕРШЕНА';
-      el.summaryTitle.textContent = 'ОТЛИЧНАЯ РАБОТА, ДЕЖУРНЫЙ!';
-      el.summaryText.textContent =
-        'Город спокойно пережил вашу смену. Вы можете потратить заработанные очки на прокачку пульта и заступить на следующую смену.';
+      el.summaryBadge.textContent = t('summaryOkBadge');
+      el.summaryTitle.textContent = t('summaryOkTitle');
+      el.summaryText.textContent = t('summaryOkText');
     } else {
       window.SoundEngine.playError();
-      el.summaryBadge.textContent = 'КРИТИЧЕСКИЙ УРОВЕНЬ ПАНИКИ';
-      el.summaryTitle.textContent = 'СМЕНА ПРОВАЛЕНА (ПАНИКА 100%)';
-      el.summaryText.textContent =
-        'Из-за ошибок и задержек в городе поднялась сильная паника. Улучшите оборудование пульта и попробуйте снова!';
+      el.summaryBadge.textContent = t('summaryFailBadge');
+      el.summaryTitle.textContent = t('summaryFailTitle');
+      el.summaryText.textContent = t('summaryFailText');
     }
 
     el.summaryStats.innerHTML = `
-      <div class="stat-card"><div class="s-val">+${state.shiftScoreEarned}</div><div class="s-lbl">Очков за смену</div></div>
-      <div class="stat-card"><div class="s-val">${state.perfectCount} / ${state.handledCount}</div><div class="s-lbl">Идеальных вызовов</div></div>
-      <div class="stat-card"><div class="s-val">${Math.round(state.panic)}%</div><div class="s-lbl">Итоговая паника</div></div>
+      <div class="stat-card"><div class="s-val">+${state.shiftScoreEarned}</div><div class="s-lbl">${t('statEarned')}</div></div>
+      <div class="stat-card"><div class="s-val">${state.perfectCount} / ${state.handledCount}</div><div class="s-lbl">${t('statPerfect')}</div></div>
+      <div class="stat-card"><div class="s-val">${Math.round(state.panic)}%</div><div class="s-lbl">${t('statPanic')}</div></div>
     `;
 
     const nextIdx = Math.min(window.GAME_DATA.SHIFTS.length - 1, state.shiftIndex + (success ? 1 : 0));
     el.btnNextShift.textContent = success
-      ? (state.shiftIndex < window.GAME_DATA.SHIFTS.length - 1 ? `▶ Смена №${nextIdx + 1}` : '▶ Повторить Смену №3')
-      : '▶ Попробовать смену снова';
+      ? (state.shiftIndex < window.GAME_DATA.SHIFTS.length - 1 ? t('btnNextShift', { n: nextIdx + 1 }) : t('btnRepeatShift'))
+      : t('btnRetryShift');
     el.btnNextShift.onclick = () => startShift(nextIdx);
 
     saveProgress();
@@ -1239,6 +1237,15 @@
       if (!el.upgradesModal.classList.contains('hidden')) {
         renderUpgradesModal();
       }
+      const lbE = document.getElementById('lbTabEasy');
+      const lbM = document.getElementById('lbTabMedium');
+      const lbH = document.getElementById('lbTabHard');
+      if (lbE) lbE.textContent = window.I18N.diffText(window.GAME_DATA.DIFFICULTIES.easy).badge;
+      if (lbM) lbM.textContent = window.I18N.diffText(window.GAME_DATA.DIFFICULTIES.medium).badge;
+      if (lbH) lbH.textContent = window.I18N.diffText(window.GAME_DATA.DIFFICULTIES.hard).badge;
+      if (!el.leaderboardModal.classList.contains('hidden')) {
+        loadLeaderboard(currentLbTab);
+      }
       if (!window.CloudService || !window.CloudService.getUser()) {
         el.btnAuth.textContent = t('btnAuth');
         if (el.btnStartAuth) el.btnStartAuth.textContent = t('btnAuth');
@@ -1269,7 +1276,7 @@
       el.tabLogin.classList.toggle('active', mode === 'login');
       el.tabRegister.classList.toggle('active', mode === 'register');
       el.callsignField.classList.toggle('hidden', mode !== 'register');
-      el.btnAuthSubmit.textContent = mode === 'login' ? '▶ ВОЙТИ В СИСТЕМУ' : '▶ СОЗДАТЬ АККАУНТ';
+      el.btnAuthSubmit.textContent = mode === 'login' ? t('authBtnLogin') : t('authBtnRegister');
       el.authMessage.classList.add('hidden');
     }
 
@@ -1400,22 +1407,26 @@
       }
 
       const myId = user ? user.id : null;
-      const diffLabels = { easy: '🟢 Простой', medium: '🟡 Средний', hard: '🔴 Сложный' };
+      const diffLabels = {
+        easy: (window.I18N ? window.I18N.diffText(window.GAME_DATA.DIFFICULTIES.easy).badge : '🟢 Простой'),
+        medium: (window.I18N ? window.I18N.diffText(window.GAME_DATA.DIFFICULTIES.medium).badge : '🟡 Средний'),
+        hard: (window.I18N ? window.I18N.diffText(window.GAME_DATA.DIFFICULTIES.hard).badge : '🔴 Сложный')
+      };
 
       if (res.kind === 'profiles') {
-        el.lbHead.innerHTML = '<tr><th>#</th><th>Позывной</th><th>Лучшая смена</th><th>Идеальных</th><th>Бюджет ★</th></tr>';
+        el.lbHead.innerHTML = `<tr><th>#</th><th>${t('lbColCallsign')}</th><th>${t('lbColBest')}</th><th>${t('lbColPerfect')}</th><th>${t('lbColBudget')}</th></tr>`;
         if (res.rows.length === 0) {
-          el.lbStatus.textContent = 'Пока нет зарегистрированных дежурных. Станьте первым!';
+          el.lbStatus.textContent = t('lbEmpty');
           return;
         }
-        el.lbStatus.textContent = `Показано лучших дежурных: ${res.rows.length}`;
+        el.lbStatus.textContent = t('lbTopProfiles', { n: res.rows.length });
         el.lbBody.innerHTML = res.rows.map((r, i) => {
           const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
           const isMe = myId && r.id === myId;
           return `
             <tr class="${isMe ? 'lb-me' : ''}">
               <td>${rank}</td>
-              <td>${escapeHtml(r.callsign)}${isMe ? ' (вы)' : ''}</td>
+              <td>${escapeHtml(r.callsign)}${isMe ? ' ' + t('lbYou') : ''}</td>
               <td>${r.best_shift_score || 0}</td>
               <td>${r.total_perfect || 0}</td>
               <td class="lb-score-cell">${r.score || 0} ★</td>
@@ -1424,24 +1435,24 @@
         }).join('');
       } else {
         const isAdm = window.CloudService && window.CloudService.isAdmin();
-        el.lbHead.innerHTML = `<tr><th>#</th><th>Позывной</th><th>Сложность</th><th>Смена</th><th>Идеально</th><th>Очки</th>${isAdm ? '<th></th>' : ''}</tr>`;
+        el.lbHead.innerHTML = `<tr><th>#</th><th>${t('lbColCallsign')}</th><th>${t('lbColDiff')}</th><th>${t('lbColShift')}</th><th>${t('lbColPerfect')}</th><th>${t('lbColScore')}</th>${isAdm ? '<th></th>' : ''}</tr>`;
         if (res.rows.length === 0) {
-          el.lbStatus.textContent = 'В этой категории пока нет записей. Завершите смену первым!';
+          el.lbStatus.textContent = t('lbEmpty');
           return;
         }
-        el.lbStatus.textContent = `Топ смен (${res.rows.length}):`;
+        el.lbStatus.textContent = t('lbTopRuns', { n: res.rows.length });
         el.lbBody.innerHTML = res.rows.map((r, i) => {
           const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
           const isMe = myId && r.user_id === myId;
           const delCol = isAdm
-            ? `<td><button class="lb-del-btn" data-del-run="${r.id}" title="Удалить запись">🗑️</button></td>`
+            ? `<td><button class="lb-del-btn" data-del-run="${r.id}">🗑️</button></td>`
             : '';
           return `
             <tr class="${isMe ? 'lb-me' : ''}">
               <td>${rank}</td>
-              <td>${escapeHtml(r.callsign)}${isMe ? ' (вы)' : ''}</td>
+              <td>${escapeHtml(r.callsign)}${isMe ? ' ' + t('lbYou') : ''}</td>
               <td>${diffLabels[r.difficulty] || r.difficulty}</td>
-              <td>№${r.shift_number}</td>
+              <td>#${r.shift_number}</td>
               <td>${r.perfect_count}/${r.handled_count}</td>
               <td class="lb-score-cell">+${r.shift_score} ★</td>
               ${delCol}
