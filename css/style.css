@@ -241,6 +241,20 @@ canvas {
   color: #ffd47a;
 }
 
+.lang-select {
+  background: #1a2327;
+  color: #dbe8e3;
+  border-color: #4c5e66;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+}
+
+.lang-select:focus {
+  border-color: var(--crt-green);
+}
+
 .action-cyan {
   background: linear-gradient(180deg, #1d576e 0%, #12394a 100%);
   border-color: #4dd2ff;

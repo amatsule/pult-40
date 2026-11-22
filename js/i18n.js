@@ -1,0 +1,924 @@
+// Локализация игры «Пульт-40»: Русский (ru), English (en), Español (es), Valencià (va)
+
+window.I18N = (function () {
+  const LANG_KEY = 'pult40_lang_v1';
+  let currentLang = 'ru';
+
+  const LANGS = [
+    { code: 'ru', label: 'RU · Русский', speech: 'ru-RU' },
+    { code: 'en', label: 'EN · English', speech: 'en-US' },
+    { code: 'es', label: 'ES · Español', speech: 'es-ES' },
+    { code: 'va', label: 'VA · Valencià', speech: 'ca-ES' }
+  ];
+
+  const UI = {
+    ru: {
+      appTitle: 'ПУЛЬТ-40',
+      meterShift: 'СМЕНА',
+      meterScore: 'ОЧКИ / БЮДЖЕТ',
+      meterPanic: 'ПАНИКА В ГОРОДЕ:',
+      meterCalls: 'ВЫЗОВЫ',
+      btnSoundOn: '🔊 Звук',
+      btnSoundOff: '🔇 Без звука',
+      btnVoiceOn: '🗣️ Диктор',
+      btnVoiceOff: '🗣️ Выкл',
+      btnUpgrades: '🔧 Прокачка',
+      btnLeaderboard: '🏆 Лидеры',
+      btnAuth: '👤 Войти',
+      btnAdmin: '🛡️ Админ',
+      btnManual: '📖 Регламент',
+      hqTag: '📢 ПРИКАЗ ШТАБА ГО:',
+      mapHeader: '🖥️ ЭКРАН АСЦО — КАРТА РАЙОНОВ (6 СЕКТОРОВ)',
+      selectedLabel: 'Выбрано:',
+      noneText: 'НЕТ',
+      btnClear: 'Сбросить',
+      legendOk: 'Вышка в сети',
+      legendBroken: 'Нет связи (клик для ремонта)',
+      legendSelected: 'Выбранный район',
+      diagAllOk: 'ЛИНИЯ СВЯЗИ: ВСЕ 12 ВЫШЕК В СЕТИ (НОРМА)',
+      btnReboot: '🔄 Перезагрузить',
+      btnCrew: '🚐 Рембригада',
+      logTitle: 'ЖУРНАЛ ДЕЖУРНОГО',
+      logReady: 'Система «Пульт-40» готова к дежурству. Нажмите «Заступить на смену».',
+      dispatchHeader: '📨 ТЕЛЕТАЙП — ВХОДЯЩЕЕ ДОНЕСЕНИЕ',
+      waitBadge: 'ОЖИДАНИЕ',
+      standbyMsg: 'Линия спокойна. Следите за картой и ждите срочных сообщений...',
+      hoaxHint: 'Подозрение на розыгрыш? Не включайте сирену!',
+      btnRejectHoax: '🚫 ОТКЛОНИТЬ (ЛОЖНЫЙ ВЫЗОВ)',
+      sirenHeader: '🚨 ШАГ 2: СИРЕНЫ («ВНИМАНИЕ ВСЕМ!»)',
+      signalType: 'ТИП СИГНАЛА:',
+      modeLong: '📢 Протяжный ревун',
+      modeLongSub: 'Реальная угроза',
+      modeShort: '🔔 Короткие гудки',
+      modeShortSub: 'Плановая проверка',
+      sirenModel: 'МОДЕЛЬ СИРЕНЫ:',
+      modelS40: 'С-40 (СССР)',
+      modelTornadoOpen: '🌪️ Торнадо',
+      modelTornadoLock: '🔒 Торнадо',
+      modelModernOpen: '📡 Цифровая',
+      modelModernLock: '🔒 Цифровая',
+      btnTestSiren: '▶ Прослушать звук сирены',
+      tvHeader: '📺 ШАГ 4: ПЕРЕХВАТ ТВ И РАДИО',
+      tvEmHeader: '⚠ ВНИМАНИЕ ВСЕМ! ⚠',
+      tvEmSub: 'ЭКСТРЕННОЕ СООБЩЕНИЕ ГО И ЧС',
+      tvToggleLabel: 'ТУМБЛЕР ПЕРЕХВАТА:',
+      stateOn: 'ВКЛ',
+      stateOff: 'ВЫКЛ',
+      kolaHeader: '📱 ШАГ 5: СОТОВАЯ РАССЫЛКА (KOLA-ALERT)',
+      kolaToggleLabel: 'ТУМБЛЕР KOLA-ALERT:',
+      kolaSelectFirst: 'Выберите район на карте для сотовой рассылки',
+      kolaReady: '🟢 Сотовые вышки в зоне в сети — готово к рассылке',
+      kolaBlocked: '🔴 НЕТ СВЯЗИ ({names}) — Kola-Alert не сработает! Почините вышку.',
+      msgHeader: '🎙️ ШАГ 3: СООБЩЕНИЕ ДЛЯ ГРОМКОГОВОРИТЕЛЕЙ',
+      slot1Label: '1. ХАРАКТЕР УГРОЗЫ:',
+      slot2Label: '2. ГЛАВНОЕ ДЕЙСТВИЕ:',
+      slot3Label: '3. ДОПОЛНИТЕЛЬНАЯ МЕРА:',
+      previewTag: 'ТЕКСТ:',
+      btnBroadcast: '📡 В ЭФИР — ЗАПУСТИТЬ ОПОВЕЩЕНИЕ',
+      startBadge: 'СЕКРЕТНЫЙ ОБЪЕКТ // БУНКЕР ДЕЖУРНОГО',
+      startDesc: 'Добро пожаловать на пост оперативного дежурного! Вы управляете городской системой оповещения на базе легендарных советских сирен С-40.',
+      bStep1: '1. Выберите район(ы) на карте — не включайте сирену там, где угрозы нет!',
+      bStep2: '2. Выберите тип сигнала: протяжный ревун для угрозы или короткие гудки для проверки.',
+      bStep3: '3. Соберите текст из 3 блоков и нажмите «В ЭФИР».',
+      bStep4: '4. Перехватите ТВ/Радио и включите Kola-Alert при реальной угрозе (при проверке не нужно).',
+      bStep5: '⚠ Будьте бдительны: чините красные вышки («Нет связи») и отклоняйте ложные розыгрыши!',
+      diffLabel: 'УРОВЕНЬ СЛОЖНОСТИ:',
+      shiftLabel: 'ВЫБЕРИТЕ СМЕНУ:',
+      btnStartShift: '▶ ЗАСТУПИТЬ НА СМЕНУ',
+      btnClose: 'Закрыть',
+      phoneSub: 'ЭКСТРЕННОЕ ОПОВЕЩЕНИЕ ГО И ЧС',
+      phoneZone: 'Зона рассылки:',
+      phoneAck: 'ОК — ПРИНЯТО',
+      mapBay: 'СЕВЕРНЫЙ ЗАЛИВ',
+      mapSelected: '[ ВЫБРАН ]',
+      mapNoSignal: '! НЕТ СВЯЗИ',
+      mapRebooting: 'ПЕРЕЗАГР...',
+      mapCrew: 'РЕМБРИГАДА',
+      mapStormWarn: '⚡ ГРОЗОВОЙ ФРОНТ — РИСК ПОМЕХ НА ЛИНИИ',
+      timeLeft: 'ОСТАЛОСЬ: {s} с',
+      priorityHigh: 'ПРИОРИТЕТ: ВЫСОКИЙ',
+      suspiciousChan: '⚠ ПОДОЗРИТЕЛЬНЫЙ КАНАЛ',
+      hintReal: '💡 Подсказка стажёру: 📢 Протяжный ревун + 📺 Перехват ТВ ВКЛ (+ 📱 Kola-Alert)',
+      hintDrill: '💡 Подсказка стажёру: 🔔 Короткие гудки + 📺 ТВ ВЫКЛ + 📱 Kola-Alert ВЫКЛ',
+      hintHoax: '💡 Подсказка стажёру: похоже на шутку — нажмите «Отклонить»!',
+      tickerSuffix: 'СОХРАНЯЙТЕ ПОРЯДОК!',
+      shiftMin: '{m} мин',
+      shiftNum: 'Смена №{n}',
+      summaryOkBadge: 'СМЕНА УСПЕШНО ЗАВЕРШЕНА',
+      summaryOkTitle: 'ОТЛИЧНАЯ РАБОТА, ДЕЖУРНЫЙ!',
+      summaryOkText: 'Город спокойно пережил вашу смену. Вы можете потратить заработанные очки на прокачку пульта и заступить на следующую смену.',
+      summaryFailBadge: 'КРИТИЧЕСКИЙ УРОВЕНЬ ПАНИКИ',
+      summaryFailTitle: 'СМЕНА ПРОВАЛЕНА (ПАНИКА 100%)',
+      summaryFailText: 'Из-за ошибок и задержек в городе поднялась сильная паника. Улучшите оборудование пульта и попробуйте снова!',
+      statEarned: 'Очков за смену',
+      statPerfect: 'Идеальных вызовов',
+      statPanic: 'Итоговая паника',
+      btnNextShift: '▶ Смена №{n}',
+      btnRepeatShift: '▶ Повторить Смену №3',
+      btnRetryShift: '▶ Попробовать смену снова',
+      btnSummaryMenu: '⚙ Сложность',
+      btnSummaryUpgrades: '🔧 Прокачать пульт',
+      upgBadge: 'МОДЕРНИЗАЦИЯ ОБОРУДОВАНИЯ',
+      upgTitle: 'ПРОКАЧКА ПУЛЬТА-40',
+      upgBudget: 'БЮДЖЕТ:',
+      upgOwned: 'УСТАНОВЛЕНО',
+      upgInService: '✓ В строю',
+      upgBuy: 'Купить и установить',
+      upgNoFunds: 'Недостаточно очков',
+      manualBadge: 'ИНСТРУКЦИЯ ОПЕРАТОРА АСЦО',
+      manualTitle: 'РЕГЛАМЕНТ РАБОТЫ С «ПУЛЬТ-40»',
+      manualClose: 'Понятно, вернуться за пульт',
+      lbBadge: 'РЕЙТИНГ ОПЕРАТОРОВ АСЦО',
+      lbTitle: '🏆 ТАБЛИЦА ЛИДЕРОВ',
+      lbRefresh: '🔄 Обновить',
+      lbTabAll: 'Все смены',
+      lbTabProfiles: '⭐ Общие очки',
+      lbGuestPrompt: 'Хотите попасть в таблицу лидеров?',
+      lbGuestBtn: '👤 Войти / Регистрация',
+      authBadge: 'ОБЛАЧНЫЙ ДОСТУП // ПРОФИЛЬ ДЕЖУРНОГО',
+      authTitle: 'АККАУНТ «ПУЛЬТ-40»',
+      authTabLogin: 'Вход',
+      authTabRegister: 'Регистрация',
+      authPlayGuest: 'Играть без входа',
+      authLogout: 'Выйти из аккаунта',
+      authSave: 'Сохранить',
+      faultSoft: 'Сбой контроллера (поможет перезагрузка)',
+      faultHard: 'Обрыв кабеля / молния (нужна рембригада)',
+      diagRepairReboot: 'Перезагрузка',
+      diagRepairCrew: 'Рембригада в пути'
+    },
+    en: {
+      appTitle: 'PULT-40',
+      meterShift: 'SHIFT',
+      meterScore: 'SCORE / BUDGET',
+      meterPanic: 'CITY PANIC:',
+      meterCalls: 'CALLS',
+      btnSoundOn: '🔊 Sound',
+      btnSoundOff: '🔇 Muted',
+      btnVoiceOn: '🗣️ Voice',
+      btnVoiceOff: '🗣️ Off',
+      btnUpgrades: '🔧 Upgrades',
+      btnLeaderboard: '🏆 Leaders',
+      btnAuth: '👤 Sign In',
+      btnAdmin: '🛡️ Admin',
+      btnManual: '📖 Manual',
+      hqTag: '📢 HQ ORDER:',
+      mapHeader: '🖥️ ALERT SCREEN — CITY DISTRICTS (6 SECTORS)',
+      selectedLabel: 'Selected:',
+      noneText: 'NONE',
+      btnClear: 'Clear',
+      legendOk: 'Tower online',
+      legendBroken: 'No signal (click to fix)',
+      legendSelected: 'Selected district',
+      diagAllOk: 'COMMS LINE: ALL 12 TOWERS ONLINE (NOMINAL)',
+      btnReboot: '🔄 Reboot',
+      btnCrew: '🚐 Repair Crew',
+      logTitle: 'OPERATOR LOG',
+      logReady: 'PULT-40 console ready for duty. Press "Start Shift".',
+      dispatchHeader: '📨 TELETYPE — INCOMING DISPATCH',
+      waitBadge: 'STANDBY',
+      standbyMsg: 'Line is clear. Monitor the map and wait for urgent dispatches...',
+      hoaxHint: 'Suspect a prank call? Do not sound the siren!',
+      btnRejectHoax: '🚫 REJECT (HOAX CALL)',
+      sirenHeader: '🚨 STEP 2: SIRENS ("ATTENTION ALL!")',
+      signalType: 'SIGNAL TYPE:',
+      modeLong: '📢 Continuous Wail',
+      modeLongSub: 'Real emergency',
+      modeShort: '🔔 Short Pulses',
+      modeShortSub: 'Routine drill',
+      sirenModel: 'SIREN MODEL:',
+      modelS40: 'S-40 (USSR)',
+      modelTornadoOpen: '🌪️ Tornado',
+      modelTornadoLock: '🔒 Tornado',
+      modelModernOpen: '📡 Digital',
+      modelModernLock: '🔒 Digital',
+      btnTestSiren: '▶ Test Siren Sound',
+      tvHeader: '📺 STEP 4: TV & RADIO INTERCEPT',
+      tvEmHeader: '⚠ ATTENTION ALL! ⚠',
+      tvEmSub: 'CIVIL DEFENSE EMERGENCY BROADCAST',
+      tvToggleLabel: 'INTERCEPT SWITCH:',
+      stateOn: 'ON',
+      stateOff: 'OFF',
+      kolaHeader: '📱 STEP 5: CELL BROADCAST (KOLA-ALERT)',
+      kolaToggleLabel: 'KOLA-ALERT SWITCH:',
+      kolaSelectFirst: 'Select a district on the map for cell broadcast',
+      kolaReady: '🟢 Cell towers in zone online — ready to broadcast',
+      kolaBlocked: '🔴 NO SIGNAL ({names}) — Kola-Alert blocked! Repair tower first.',
+      msgHeader: '🎙️ STEP 3: LOUDSPEAKER MESSAGE BUILDER',
+      slot1Label: '1. THREAT TYPE:',
+      slot2Label: '2. MAIN ACTION:',
+      slot3Label: '3. EXTRA MEASURE:',
+      previewTag: 'TEXT:',
+      btnBroadcast: '📡 ON AIR — LAUNCH ALERT',
+      startBadge: 'CLASSIFIED FACILITY // DUTY BUNKER',
+      startDesc: 'Welcome to the emergency duty desk! You operate the city-wide public warning system powered by legendary Soviet S-40 sirens.',
+      bStep1: '1. Select target district(s) on the map — never sound alarms in safe areas!',
+      bStep2: '2. Pick signal type: continuous wail for real threats or short pulses for drills.',
+      bStep3: '3. Assemble the 3-block announcement and press "ON AIR".',
+      bStep4: '4. Flip TV/Radio Intercept & Kola-Alert ON for real threats (keep OFF for drills).',
+      bStep5: '⚠ Stay sharp: repair red towers ("No signal") and reject hoax pranks!',
+      diffLabel: 'DIFFICULTY LEVEL:',
+      shiftLabel: 'SELECT SHIFT:',
+      btnStartShift: '▶ START SHIFT',
+      btnClose: 'Close',
+      phoneSub: 'EMERGENCY CIVIL DEFENSE ALERT',
+      phoneZone: 'Broadcast zone:',
+      phoneAck: 'OK — ACKNOWLEDGED',
+      mapBay: 'NORTHERN BAY',
+      mapSelected: '[ SELECTED ]',
+      mapNoSignal: '! NO SIGNAL',
+      mapRebooting: 'REBOOTING...',
+      mapCrew: 'REPAIR CREW',
+      mapStormWarn: '⚡ STORM FRONT — LINE INTERFERENCE RISK',
+      timeLeft: 'LEFT: {s} s',
+      priorityHigh: 'PRIORITY: HIGH',
+      suspiciousChan: '⚠ SUSPICIOUS CHANNEL',
+      hintReal: '💡 Trainee hint: 📢 Continuous Wail + 📺 TV Intercept ON (+ 📱 Kola-Alert)',
+      hintDrill: '💡 Trainee hint: 🔔 Short Pulses + 📺 TV OFF + 📱 Kola-Alert OFF',
+      hintHoax: '💡 Trainee hint: sounds like a prank — click "Reject"!',
+      tickerSuffix: 'STAY CALM AND FOLLOW INSTRUCTIONS!',
+      shiftMin: '{m} min',
+      shiftNum: 'Shift #{n}',
+      summaryOkBadge: 'SHIFT COMPLETED',
+      summaryOkTitle: 'GREAT WORK, OPERATOR!',
+      summaryOkText: 'The city safely survived your shift. Spend your earned points on console upgrades and start the next shift.',
+      summaryFailBadge: 'CRITICAL PANIC LEVEL',
+      summaryFailTitle: 'SHIFT FAILED (PANIC 100%)',
+      summaryFailText: 'Errors and delays caused city-wide panic. Upgrade your console hardware and try again!',
+      statEarned: 'Shift Score',
+      statPerfect: 'Perfect Calls',
+      statPanic: 'Final Panic',
+      btnNextShift: '▶ Shift #{n}',
+      btnRepeatShift: '▶ Replay Shift #3',
+      btnRetryShift: '▶ Retry Shift',
+      btnSummaryMenu: '⚙ Difficulty',
+      btnSummaryUpgrades: '🔧 Upgrade Console',
+      upgBadge: 'HARDWARE MODERNIZATION',
+      upgTitle: 'PULT-40 UPGRADES',
+      upgBudget: 'BUDGET:',
+      upgOwned: 'INSTALLED',
+      upgInService: '✓ Active',
+      upgBuy: 'Buy & Install',
+      upgNoFunds: 'Not enough points',
+      manualBadge: 'OPERATOR HANDBOOK',
+      manualTitle: 'PULT-40 OPERATING PROTOCOL',
+      manualClose: 'Got it, back to console',
+      lbBadge: 'OPERATOR RANKINGS',
+      lbTitle: '🏆 LEADERBOARD',
+      lbRefresh: '🔄 Refresh',
+      lbTabAll: 'All Shifts',
+      lbTabProfiles: '⭐ Total Score',
+      lbGuestPrompt: 'Want to appear on the leaderboard?',
+      lbGuestBtn: '👤 Sign In / Register',
+      authBadge: 'CLOUD ACCESS // OPERATOR PROFILE',
+      authTitle: 'PULT-40 ACCOUNT',
+      authTabLogin: 'Sign In',
+      authTabRegister: 'Register',
+      authPlayGuest: 'Play as Guest',
+      authLogout: 'Sign Out',
+      authSave: 'Save',
+      faultSoft: 'Controller glitch (Reboot works)',
+      faultHard: 'Cable cut / lightning (Needs Repair Crew)',
+      diagRepairReboot: 'Rebooting',
+      diagRepairCrew: 'Repair crew en route'
+    },
+    es: {
+      appTitle: 'PULT-40',
+      meterShift: 'TURNO',
+      meterScore: 'PUNTOS / PRESUP.',
+      meterPanic: 'PÁNICO CIUDAD:',
+      meterCalls: 'AVISOS',
+      btnSoundOn: '🔊 Sonido',
+      btnSoundOff: '🔇 Silencio',
+      btnVoiceOn: '🗣️ Voz',
+      btnVoiceOff: '🗣️ No',
+      btnUpgrades: '🔧 Mejoras',
+      btnLeaderboard: '🏆 Ranking',
+      btnAuth: '👤 Entrar',
+      btnAdmin: '🛡️ Admin',
+      btnManual: '📖 Manual',
+      hqTag: '📢 ORDEN DEL MANDO:',
+      mapHeader: '🖥️ PANTALLA DE ALERTA — DISTRITOS (6 SECTORES)',
+      selectedLabel: 'Elegidos:',
+      noneText: 'NINGUNO',
+      btnClear: 'Limpiar',
+      legendOk: 'Torre activa',
+      legendBroken: 'Sin señal (clic para reparar)',
+      legendSelected: 'Distrito elegido',
+      diagAllOk: 'LÍNEA DE ENLACE: 12 TORRES ACTIVAS (NORMAL)',
+      btnReboot: '🔄 Reiniciar',
+      btnCrew: '🚐 Brigada',
+      logTitle: 'REGISTRO DEL OPERADOR',
+      logReady: 'Sistema PULT-40 listo para el turno. Pulsa «Iniciar turno».',
+      dispatchHeader: '📨 TELETIPO — AVISO URGENTE',
+      waitBadge: 'ESPERA',
+      standbyMsg: 'Línea tranquila. Vigila el mapa y espera avisos urgentes...',
+      hoaxHint: '¿Sospechas una broma? ¡No actives la sirena!',
+      btnRejectHoax: '🚫 RECHAZAR (FALSA ALARMA)',
+      sirenHeader: '🚨 PASO 2: SIRENAS («¡ATENCIÓN A TODOS!»)',
+      signalType: 'TIPO DE SEÑAL:',
+      modeLong: '📢 Sirena continua',
+      modeLongSub: 'Amenaza real',
+      modeShort: '🔔 Pitidos cortos',
+      modeShortSub: 'Prueba rutinaria',
+      sirenModel: 'MODELO DE SIRENA:',
+      modelS40: 'S-40 (URSS)',
+      modelTornadoOpen: '🌪️ Tornado',
+      modelTornadoLock: '🔒 Tornado',
+      modelModernOpen: '📡 Digital',
+      modelModernLock: '🔒 Digital',
+      btnTestSiren: '▶ Probar sonido de sirena',
+      tvHeader: '📺 PASO 4: INTERVENCIÓN TV Y RADIO',
+      tvEmHeader: '⚠ ¡ATENCIÓN A TODOS! ⚠',
+      tvEmSub: 'MENSAJE DE EMERGENCIA PROTECCIÓN CIVIL',
+      tvToggleLabel: 'INTERRUPTOR TV:',
+      stateOn: 'ON',
+      stateOff: 'OFF',
+      kolaHeader: '📱 PASO 5: ALERTA MÓVIL (KOLA-ALERT)',
+      kolaToggleLabel: 'INTERRUPTOR KOLA-ALERT:',
+      kolaSelectFirst: 'Elige un distrito en el mapa para alerta móvil',
+      kolaReady: '🟢 Torres móviles activas en zona — listo',
+      kolaBlocked: '🔴 SIN SEÑAL ({names}) — ¡Kola-Alert bloqueado! Repara la torre.',
+      msgHeader: '🎙️ PASO 3: MENSAJE PARA ALTAVOCES',
+      slot1Label: '1. TIPO DE AMENAZA:',
+      slot2Label: '2. ACCIÓN PRINCIPAL:',
+      slot3Label: '3. MEDIDA EXTRA:',
+      previewTag: 'TEXTO:',
+      btnBroadcast: '📡 AL AIRE — LANZAR ALERTA',
+      startBadge: 'INSTALACIÓN SECRETA // BÚNKER DE GUARDIA',
+      startDesc: '¡Bienvenido al puesto de guardia! Controlas el sistema de alerta de la ciudad con las legendarias sirenas soviéticas S-40.',
+      bStep1: '1. Elige solo los distritos afectados en el mapa — ¡no causes pánico innecesario!',
+      bStep2: '2. Elige la señal: sirena continua para peligros reales o pitidos cortos para pruebas.',
+      bStep3: '3. Monta el mensaje de 3 bloques y pulsa «AL AIRE».',
+      bStep4: '4. Activa TV/Radio y Kola-Alert ante peligros reales (déjalos OFF en pruebas).',
+      bStep5: '⚠ ¡Atento!: repara torres rojas («Sin señal») y rechaza falsas alarmas.',
+      diffLabel: 'NIVEL DE DIFICULTAD:',
+      shiftLabel: 'ELIGE TURNO:',
+      btnStartShift: '▶ INICIAR TURNO',
+      btnClose: 'Cerrar',
+      phoneSub: 'ALERTA DE PROTECCIÓN CIVIL',
+      phoneZone: 'Zona de envío:',
+      phoneAck: 'OK — ENTENDIDO',
+      mapBay: 'BAHÍA NORTE',
+      mapSelected: '[ ELEGIDO ]',
+      mapNoSignal: '! SIN SEÑAL',
+      mapRebooting: 'REINICIO...',
+      mapCrew: 'BRIGADA',
+      mapStormWarn: '⚡ TORMENTA — RIESGO DE FALLOS EN LÍNEA',
+      timeLeft: 'QUEDAN: {s} s',
+      priorityHigh: 'PRIORIDAD: ALTA',
+      suspiciousChan: '⚠ CANAL SOSPECHOSO',
+      hintReal: '💡 Pista: 📢 Sirena continua + 📺 TV ON (+ 📱 Kola-Alert)',
+      hintDrill: '💡 Pista: 🔔 Pitidos cortos + 📺 TV OFF + 📱 Kola-Alert OFF',
+      hintHoax: '💡 Pista: parece una broma — ¡pulsa «Rechazar»!',
+      tickerSuffix: '¡MANTENGAN LA CALMA!',
+      shiftMin: '{m} min',
+      shiftNum: 'Turno nº{n}',
+      summaryOkBadge: 'TURNO COMPLETADO',
+      summaryOkTitle: '¡BUEN TRABAJO, OPERADOR!',
+      summaryOkText: 'La ciudad superó tu turno con seguridad. Mejora tu consola con los puntos ganados y pasa al siguiente turno.',
+      summaryFailBadge: 'NIVEL DE PÁNICO CRÍTICO',
+      summaryFailTitle: 'TURNO FALLIDO (PÁNICO 100%)',
+      summaryFailText: 'Los errores y retrasos provocaron pánico general. ¡Mejora tu equipo e inténtalo de nuevo!',
+      statEarned: 'Puntos del turno',
+      statPerfect: 'Avisos perfectos',
+      statPanic: 'Pánico final',
+      btnNextShift: '▶ Turno nº{n}',
+      btnRepeatShift: '▶ Repetir Turno nº3',
+      btnRetryShift: '▶ Reintentar turno',
+      btnSummaryMenu: '⚙ Dificultad',
+      btnSummaryUpgrades: '🔧 Mejorar consola',
+      upgBadge: 'MODERNIZACIÓN DE EQUIPO',
+      upgTitle: 'MEJORAS DE PULT-40',
+      upgBudget: 'PRESUPUESTO:',
+      upgOwned: 'INSTALADO',
+      upgInService: '✓ Activo',
+      upgBuy: 'Comprar e instalar',
+      upgNoFunds: 'Puntos insuficientes',
+      manualBadge: 'MANUAL DEL OPERADOR',
+      manualTitle: 'PROTOCOLO DE PULT-40',
+      manualClose: 'Entendido, volver al puesto',
+      lbBadge: 'CLASIFICACIÓN DE OPERADORES',
+      lbTitle: '🏆 TABLA DE LÍDERES',
+      lbRefresh: '🔄 Actualizar',
+      lbTabAll: 'Todos los turnos',
+      lbTabProfiles: '⭐ Puntos totales',
+      lbGuestPrompt: '¿Quieres aparecer en la tabla de líderes?',
+      lbGuestBtn: '👤 Entrar / Registro',
+      authBadge: 'ACCESO NUBE // PERFIL DE OPERADOR',
+      authTitle: 'CUENTA «PULT-40»',
+      authTabLogin: 'Entrar',
+      authTabRegister: 'Registro',
+      authPlayGuest: 'Jugar sin cuenta',
+      authLogout: 'Cerrar sesión',
+      authSave: 'Guardar',
+      faultSoft: 'Fallo de controlador (Reiniciar funciona)',
+      faultHard: 'Cable cortado / rayo (Requiere Brigada)',
+      diagRepairReboot: 'Reiniciando',
+      diagRepairCrew: 'Brigada en camino'
+    },
+    va: {
+      appTitle: 'PULT-40',
+      meterShift: 'TORN',
+      meterScore: 'PUNTS / PRESSUP.',
+      meterPanic: 'PÀNIC CIUTAT:',
+      meterCalls: 'AVISOS',
+      btnSoundOn: '🔊 So',
+      btnSoundOff: '🔇 Silenci',
+      btnVoiceOn: '🗣️ Veu',
+      btnVoiceOff: '🗣️ No',
+      btnUpgrades: '🔧 Millores',
+      btnLeaderboard: '🏆 Rànquing',
+      btnAuth: '👤 Entrar',
+      btnAdmin: '🛡️ Admin',
+      btnManual: '📖 Manual',
+      hqTag: '📢 ORDRE DEL COMANDAMENT:',
+      mapHeader: '🖥️ PANTALLA D’ALERTA — DISTRICTES (6 SECTORS)',
+      selectedLabel: 'Triats:',
+      noneText: 'CAP',
+      btnClear: 'Netejar',
+      legendOk: 'Torre en xarxa',
+      legendBroken: 'Sense senyal (clic per reparar)',
+      legendSelected: 'Districte triat',
+      diagAllOk: 'LÍNIA D’ENLLAÇ: 12 TORRES EN XARXA (NORMAL)',
+      btnReboot: '🔄 Reiniciar',
+      btnCrew: '🚐 Brigada',
+      logTitle: 'REGISTRE DE L’OPERADOR',
+      logReady: 'Sistema PULT-40 preparat per al torn. Prem «Començar torn».',
+      dispatchHeader: '📨 TELETIP — AVÍS URGENT',
+      waitBadge: 'ESPERA',
+      standbyMsg: 'Línia tranquil·la. Vigila el mapa i espera avisos urgents...',
+      hoaxHint: 'Sospites una broma? No actives la sirena!',
+      btnRejectHoax: '🚫 REBUTJAR (FALSA ALARMA)',
+      sirenHeader: '🚨 PAS 2: SIRENES («ATENCIÓ A TOTS!»)',
+      signalType: 'TIPUS DE SENYAL:',
+      modeLong: '📢 Sirena contínua',
+      modeLongSub: 'Amenaça real',
+      modeShort: '🔔 Xiulets curts',
+      modeShortSub: 'Prova rutinària',
+      sirenModel: 'MODEL DE SIRENA:',
+      modelS40: 'S-40 (URSS)',
+      modelTornadoOpen: '🌪️ Tornado',
+      modelTornadoLock: '🔒 Tornado',
+      modelModernOpen: '📡 Digital',
+      modelModernLock: '🔒 Digital',
+      btnTestSiren: '▶ Provar so de sirena',
+      tvHeader: '📺 PAS 4: INTERVENCIÓ TV I RÀDIO',
+      tvEmHeader: '⚠ ATENCIÓ A TOTS! ⚠',
+      tvEmSub: 'MISSATGE D’EMERGÈNCIA PROTECCIÓ CIVIL',
+      tvToggleLabel: 'INTERRUPTOR TV:',
+      stateOn: 'ON',
+      stateOff: 'OFF',
+      kolaHeader: '📱 PAS 5: ALERTA MÒBIL (KOLA-ALERT)',
+      kolaToggleLabel: 'INTERRUPTOR KOLA-ALERT:',
+      kolaSelectFirst: 'Tria un districte al mapa per a l’alerta mòbil',
+      kolaReady: '🟢 Torres mòbils actives en zona — preparat',
+      kolaBlocked: '🔴 SENSE SENYAL ({names}) — Kola-Alert bloquejat! Repara la torre.',
+      msgHeader: '🎙️ PAS 3: MISSATGE PER A ALTAVEUS',
+      slot1Label: '1. TIPUS D’AMENAÇA:',
+      slot2Label: '2. ACCIÓ PRINCIPAL:',
+      slot3Label: '3. MESURA EXTRA:',
+      previewTag: 'TEXT:',
+      btnBroadcast: '📡 EN DIRECTE — LLANÇAR ALERTA',
+      startBadge: 'INSTAL·LACIÓ SECRETA // BÚNQUER DE GUÀRDIA',
+      startDesc: 'Benvingut al lloc de guàrdia! Controles el sistema d’alerta de la ciutat amb les llegendàries sirenes soviètiques S-40.',
+      bStep1: '1. Tria només els districtes afectats al mapa — no causes pànic innecessari!',
+      bStep2: '2. Tria el senyal: sirena contínua per a perills reals o xiulets curts per a proves.',
+      bStep3: '3. Munta el missatge de 3 blocs i prem «EN DIRECTE».',
+      bStep4: '4. Activa TV/Ràdio i Kola-Alert en perills reals (deixa’ls OFF en proves).',
+      bStep5: '⚠ Atent!: repara torres roges («Sense senyal») i rebutja falses alarmes.',
+      diffLabel: 'NIVELL DE DIFICULTAT:',
+      shiftLabel: 'TRIA TORN:',
+      btnStartShift: '▶ COMENÇAR TORN',
+      btnClose: 'Tancar',
+      phoneSub: 'ALERTA DE PROTECCIÓ CIVIL',
+      phoneZone: 'Zona d’enviament:',
+      phoneAck: 'OK — ENTÉS',
+      mapBay: 'BADIA NORD',
+      mapSelected: '[ TRIAT ]',
+      mapNoSignal: '! SENSE SENYAL',
+      mapRebooting: 'REINICI...',
+      mapCrew: 'BRIGADA',
+      mapStormWarn: '⚡ TEMPESTA — RISC DE FALLADES EN LÍNIA',
+      timeLeft: 'QUEDEN: {s} s',
+      priorityHigh: 'PRIORITAT: ALTA',
+      suspiciousChan: '⚠ CANAL SOSPITÓS',
+      hintReal: '💡 Pista: 📢 Sirena contínua + 📺 TV ON (+ 📱 Kola-Alert)',
+      hintDrill: '💡 Pista: 🔔 Xiulets curts + 📺 TV OFF + 📱 Kola-Alert OFF',
+      hintHoax: '💡 Pista: sembla una broma — prem «Rebutjar»!',
+      tickerSuffix: 'MANTINGUEU LA CALMA!',
+      shiftMin: '{m} min',
+      shiftNum: 'Torn núm. {n}',
+      summaryOkBadge: 'TORN COMPLETAT',
+      summaryOkTitle: 'BONA FEINA, OPERADOR!',
+      summaryOkText: 'La ciutat ha superat el teu torn amb seguretat. Millora la consola amb els punts guanyats i passa al següent torn.',
+      summaryFailBadge: 'NIVELL DE PÀNIC CRÍTIC',
+      summaryFailTitle: 'TORN FALLIT (PÀNIC 100%)',
+      summaryFailText: 'Els errors i retards han provocat pànic general. Millora l’equip i torna-ho a provar!',
+      statEarned: 'Punts del torn',
+      statPerfect: 'Avisos perfectes',
+      statPanic: 'Pànic final',
+      btnNextShift: '▶ Torn núm. {n}',
+      btnRepeatShift: '▶ Repetir Torn núm. 3',
+      btnRetryShift: '▶ Reintentar torn',
+      btnSummaryMenu: '⚙ Dificultat',
+      btnSummaryUpgrades: '🔧 Millorar consola',
+      upgBadge: 'MODERNITZACIÓ D’EQUIP',
+      upgTitle: 'MILLORES DE PULT-40',
+      upgBudget: 'PRESSUPOST:',
+      upgOwned: 'INSTAL·LAT',
+      upgInService: '✓ Actiu',
+      upgBuy: 'Comprar i instal·lar',
+      upgNoFunds: 'Punts insuficients',
+      manualBadge: 'MANUAL DE L’OPERADOR',
+      manualTitle: 'PROTOCOL DE PULT-40',
+      manualClose: 'Entés, tornar al lloc',
+      lbBadge: 'CLASSIFICACIÓ D’OPERADORS',
+      lbTitle: '🏆 TAULA DE LÍDERS',
+      lbRefresh: '🔄 Actualitzar',
+      lbTabAll: 'Tots els torns',
+      lbTabProfiles: '⭐ Punts totals',
+      lbGuestPrompt: 'Vols aparéixer en la taula de líders?',
+      lbGuestBtn: '👤 Entrar / Registre',
+      authBadge: 'ACCÉS NÚVOL // PERFIL D’OPERADOR',
+      authTitle: 'COMPTE «PULT-40»',
+      authTabLogin: 'Entrar',
+      authTabRegister: 'Registre',
+      authPlayGuest: 'Jugar sense compte',
+      authLogout: 'Tancar sessió',
+      authSave: 'Guardar',
+      faultSoft: 'Fallada de controlador (Reiniciar funciona)',
+      faultHard: 'Cable tallat / llamp (Cal Brigada)',
+      diagRepairReboot: 'Reiniciant',
+      diagRepairCrew: 'Brigada en camí'
+    }
+  };
+
+  // Названия районов
+  const DISTRICTS_T = {
+    center: { ru: ['Центр', 'ЦЕНТР'], en: ['Center', 'CENTER'], es: ['Centro', 'CENTRO'], va: ['Centre', 'CENTRE'] },
+    factory: { ru: ['Заводской', 'ЗАВОДСКОЙ'], en: ['Industrial', 'INDUSTRIAL'], es: ['Industrial', 'INDUSTRIAL'], va: ['Industrial', 'INDUSTRIAL'] },
+    port: { ru: ['Порт', 'ПОРТ'], en: ['Port', 'PORT'], es: ['Puerto', 'PUERTO'], va: ['Port', 'PORT'] },
+    forest: { ru: ['Лесной', 'ЛЕСНОЙ'], en: ['Forest', 'FOREST'], es: ['Bosque', 'BOSQUE'], va: ['Bosc', 'BOSC'] },
+    residential: { ru: ['Спальный', 'СПАЛЬНЫЙ'], en: ['Residential', 'RESIDENTIAL'], es: ['Residencial', 'RESIDENCIAL'], va: ['Residencial', 'RESIDENCIAL'] },
+    airport: { ru: ['Аэропорт', 'АЭРОПОРТ'], en: ['Airport', 'AIRPORT'], es: ['Aeropuerto', 'AEROPUERTO'], va: ['Aeroport', 'AEROPORT'] }
+  };
+
+  // Блоки конструктора сообщений
+  const MSG_BLOCKS_T = {
+    storm: {
+      ru: 'Внимание! Приближается шторм',
+      en: 'Attention! Severe storm approaching',
+      es: '¡Atención! Se acerca una tormenta',
+      va: 'Atenció! S’acosta una tempesta'
+    },
+    smoke: {
+      ru: 'Внимание! Химическое задымление',
+      en: 'Attention! Chemical smoke leak',
+      es: '¡Atención! Fuga de humo químico',
+      va: 'Atenció! Fuga de fum químic'
+    },
+    fire: {
+      ru: 'Внимание! Пожарная опасность',
+      en: 'Attention! Fire emergency',
+      es: '¡Atención! Peligro de incendio',
+      va: 'Atenció! Perill d’incendi'
+    },
+    flood: {
+      ru: 'Внимание! Угроза подтопления',
+      en: 'Attention! Flood warning',
+      es: '¡Atención! Riesgo de inundación',
+      va: 'Atenció! Risc d’inundació'
+    },
+    aviation: {
+      ru: 'Внимание! Аварийная посадка',
+      en: 'Attention! Emergency aircraft landing',
+      es: '¡Atención! Aterrizaje de emergencia',
+      va: 'Atenció! Aterratge d’emergència'
+    },
+    drill: {
+      ru: 'Проверка системы оповещения',
+      en: 'Public warning system test',
+      es: 'Prueba del sistema de alerta',
+      va: 'Prova del sistema d’alerta'
+    },
+    shelter: {
+      ru: 'Всем укрыться в помещениях',
+      en: 'Take shelter indoors immediately',
+      es: 'Refúgiense en interiores',
+      va: 'Refugieu-vos en interiors'
+    },
+    evacuate: {
+      ru: 'Немедленно покинуть опасную зону',
+      en: 'Evacuate the danger zone immediately',
+      es: 'Evacuen la zona de peligro ahora',
+      va: 'Evacueu la zona de perill ara'
+    },
+    highground: {
+      ru: 'Подняться на верхние этажи',
+      en: 'Move to upper floors immediately',
+      es: 'Suban a los pisos superiores',
+      va: 'Pugeu als pisos superiors'
+    },
+    calm: {
+      ru: 'Сохраняйте спокойствие, это проверка',
+      en: 'Stay calm, this is only a test',
+      es: 'Mantengan la calma, es una prueba',
+      va: 'Mantingueu la calma, és una prova'
+    },
+    windows: {
+      ru: 'Закрыть окна и двери',
+      en: 'Close all windows and doors',
+      es: 'Cierren ventanas y puertas',
+      va: 'Tanqueu finestres i portes'
+    },
+    mask: {
+      ru: 'Надеть средства защиты дыхания',
+      en: 'Wear respiratory protection',
+      es: 'Usen protección respiratoria',
+      va: 'Useu protecció respiratòria'
+    },
+    power: {
+      ru: 'Отключить газ и электричество',
+      en: 'Shut off gas and electricity',
+      es: 'Corten gas y electricidad',
+      va: 'Talleu gas i electricitat'
+    },
+    clear_road: {
+      ru: 'Освободить подъезды спецслужбам',
+      en: 'Keep roads clear for emergency services',
+      es: 'Dejen libres los accesos a emergencias',
+      va: 'Deixeu lliures els accessos a emergències'
+    },
+    no_action: {
+      ru: 'Никаких действий не требуется',
+      en: 'No action is required',
+      es: 'No se requiere ninguna acción',
+      va: 'No cal cap acció'
+    }
+  };
+
+  // Донесения (источник, заголовок, текст)
+  const INCIDENTS_T = {
+    inc_port_storm: {
+      en: ['WEATHER SERVICE', 'Storm Warning', 'A severe hurricane with 32 m/s winds is hitting the PORT district! Instruct residents to take shelter indoors and close all windows and doors.'],
+      es: ['METEOROLOGÍA', 'Aviso de temporal', '¡Un huracán con vientos de 32 m/s se acerca al PUERTO! Indica a los vecinos refugiarse en interiores y cerrar ventanas y puertas.'],
+      va: ['METEOROLOGIA', 'Avís de temporal', 'Un huracà amb vents de 32 m/s s’acosta al PORT! Indica als veïns refugiar-se en interiors i tancar finestres i portes.']
+    },
+    inc_factory_smoke: {
+      en: ['FIRE DEPARTMENT', 'Toxic Smoke Leak', 'Chemical smoke leak at the plant in INDUSTRIAL district! Announce chemical smoke: shelter indoors and wear respiratory protection.'],
+      es: ['BOMBEROS', 'Fuga de humo tóxico', '¡Fuga de humo químico en la fábrica del distrito INDUSTRIAL! Avisa de humo químico: refugiarse en interiores y usar protección respiratoria.'],
+      va: ['BOMBERS', 'Fuga de fum tòxic', 'Fuga de fum químic a la fàbrica del districte INDUSTRIAL! Avisa de fum químic: refugiar-se en interiors i usar protecció respiratòria.']
+    },
+    inc_forest_fire: {
+      en: ['FORESTRY PATROL', 'Wildfire Alert', 'Major wildfire in the FOREST district! Flames are approaching the sanatorium. Declare fire emergency: evacuate the danger zone and keep roads clear for emergency services.'],
+      es: ['GUARDIA FORESTAL', 'Incendio forestal', '¡Gran incendio en el distrito BOSQUE! El fuego se acerca al sanatorio. Declara peligro de incendio: evacuar la zona y dejar libres los accesos.'],
+      va: ['GUÀRDIA FORESTAL', 'Incendi forestal', 'Gran incendi al districte BOSC! El foc s’acosta al sanatori. Declara perill d’incendi: evacuar la zona i deixar lliures els accessos.']
+    },
+    inc_port_center_flood: {
+      en: ['WATER PATROL', 'Dam Breach on Bay', 'Rapid water rise! Flood threat covers PORT and CENTER. Sound the siren in both districts: move to upper floors and shut off gas and electricity.'],
+      es: ['EMERGENCIAS', 'Rotura de dique', '¡Subida rápida del agua! Riesgo de inundación en PUERTO y CENTRO. Activa la sirena en ambos: subir a pisos superiores y cortar gas y electricidad.'],
+      va: ['EMERGÈNCIES', 'Ruptura de dic', 'Pujada ràpida de l’aigua! Risc d’inundació al PORT i CENTRE. Activa la sirena en tots dos: pujar als pisos superiors i tallar gas i electricitat.']
+    },
+    inc_airport_emergency: {
+      en: ['AIR TRAFFIC CONTROL', 'Emergency Landing', 'A cargo plane with a fuel leak is making an emergency landing at AIRPORT. Alert AIRPORT only: evacuate the danger zone and keep roads clear.'],
+      es: ['TORRE DE CONTROL', 'Aterrizaje de emergencia', 'Un avión de carga con fuga de combustible aterrizará de emergencia en AEROPUERTO. Alerta solo en AEROPUERTO: evacuar la zona y dejar libres los accesos.'],
+      va: ['TORRE DE CONTROL', 'Aterratge d’emergència', 'Un avió de càrrega amb fuga de combustible aterrarà d’emergència a l’AEROPORT. Alerta només a l’AEROPORT: evacuar la zona i deixar lliures els accessos.']
+    },
+    inc_res_storm: {
+      en: ['WEATHER SERVICE', 'Hailstorm & Tornado', 'A severe storm front with large hail is hitting RESIDENTIAL and CENTER! Warn about the storm: shelter indoors and close windows and doors.'],
+      es: ['METEOROLOGÍA', 'Granizo y tornado', '¡Frente de tormenta con granizo sobre RESIDENCIAL y CENTRO! Avisa de tormenta: refugiarse en interiores y cerrar ventanas y puertas.'],
+      va: ['METEOROLOGIA', 'Pedregada i tornado', 'Front de tempesta amb pedra sobre RESIDENCIAL i CENTRE! Avisa de tempesta: refugiar-se en interiors i tancar finestres i portes.']
+    },
+    inc_factory_res_smoke: {
+      en: ['ECOLOGY INSTITUTE', 'Drifting Toxic Cloud', 'Wind pushed the smoke plume from INDUSTRIAL to RESIDENTIAL! Alert both districts: chemical smoke, shelter indoors, close windows and doors.'],
+      es: ['INSTITUTO ECOLÓGICO', 'Nube tóxica a la deriva', '¡El viento lleva la nube de humo desde INDUSTRIAL hasta RESIDENCIAL! Alerta en ambos: humo químico, refugiarse en interiores y cerrar ventanas.'],
+      va: ['INSTITUT ECOLÒGIC', 'Núvol tòxic a la deriva', 'El vent porta el núvol de fum des d’INDUSTRIAL fins a RESIDENCIAL! Alerta en tots dos: fum químic, refugiar-se en interiors i tancar finestres.']
+    },
+    inc_center_fire: {
+      en: ['FIRE DEPARTMENT', 'Warehouse Fire', 'Major fire at the central warehouse in CENTER! Declare fire emergency: evacuate the danger zone and shut off gas and electricity.'],
+      es: ['BOMBEROS', 'Incendio en almacén', '¡Gran incendio en el almacén de CENTRO! Declara peligro de incendio: evacuar la zona y cortar gas y electricidad.'],
+      va: ['BOMBERS', 'Incendi en magatzem', 'Gran incendi al magatzem de CENTRE! Declara perill d’incendi: evacuar la zona i tallar gas i electricitat.']
+    },
+    inc_airport_forest_storm: {
+      en: ['WEATHER SERVICE', 'Western Cyclone', 'A fierce storm front is entering FOREST and AIRPORT. Announce storm in both districts: shelter indoors and shut off gas and electricity.'],
+      es: ['METEOROLOGÍA', 'Ciclón del oeste', 'Un fuerte temporal entra en BOSQUE y AEROPUERTO. Anuncia tormenta en ambos distritos: refugiarse en interiores y cortar gas y electricidad.'],
+      va: ['METEOROLOGIA', 'Cicló de l’oest', 'Un fort temporal entra a BOSC i AEROPORT. Anuncia tempesta en tots dos districtes: refugiar-se en interiors i tallar gas i electricitat.']
+    },
+    inc_drill_center: {
+      en: ['CIVIL DEFENSE HQ', 'Scheduled Siren Test', 'Scheduled loudspeaker test in CENTER. Use SHORT PULSES and broadcast the test message (no action required). Keep TV intercept OFF!'],
+      es: ['MANDO PROTECCIÓN CIVIL', 'Prueba programada', 'Prueba técnica programada en CENTRO. Usa PITIDOS CORTOS y el mensaje de prueba (sin acción). ¡Deja TV en OFF!'],
+      va: ['COMANDAMENT PROT. CIVIL', 'Prova programada', 'Prova tècnica programada al CENTRE. Usa XIULETS CURTS i el missatge de prova (cap acció). Deixa TV en OFF!']
+    },
+    inc_drill_res: {
+      en: ['CIVIL DEFENSE HQ', 'Routine Line Check', 'Scheduled tower test in RESIDENTIAL district. Send SHORT PULSES and the calm test announcement. Do NOT intercept TV/Radio.'],
+      es: ['MANDO PROTECCIÓN CIVIL', 'Comprobación rutinaria', 'Prueba de torres en RESIDENCIAL. Envía PITIDOS CORTOS y el mensaje tranquilo de prueba. NO interrumpas la TV.'],
+      va: ['COMANDAMENT PROT. CIVIL', 'Comprovació rutinària', 'Prova de torres a RESIDENCIAL. Envia XIULETS CURTS i el missatge tranquil de prova. NO interrompes la TV.']
+    },
+    inc_drill_port_factory: {
+      en: ['ENGINEERING DEPT', 'Speaker Calibration', 'Routine calibration in PORT and INDUSTRIAL. Send SHORT PULSES and the standard test message. Keep TV intercept OFF!'],
+      es: ['INGENIERÍA', 'Calibración de altavoces', 'Calibración rutinaria en PUERTO e INDUSTRIAL. Usa PITIDOS CORTOS y el mensaje de prueba. ¡No interrumpas la TV!'],
+      va: ['ENGINYERIA', 'Calibració d’altaveus', 'Calibració rutinària al PORT i INDUSTRIAL. Usa XIULETS CURTS i el missatge de prova. No interrompes la TV!']
+    },
+    hoax_donut: {
+      en: ['UNKNOWN CHANNEL', 'URGENT!! Cosmic Threat', 'Alert! A giant flying glazed donut is heading straight for CENTER! Sound all sirens before it covers us in powdered sugar!'],
+      es: ['CANAL DESCONOCIDO', '¡¡URGENTE!! Amenaza cósmica', '¡Alerta! ¡Una rosquilla gigante voladora con glaseado vuela hacia CENTRO! ¡Activa todas las sirenas antes de que nos cubra de azúcar!'],
+      va: ['CANAL DESCONEGUT', 'URGENT!! Amenaça còsmica', 'Alerta! Un dònut gegant volador amb sucre vola cap al CENTRE! Activa totes les sirenes abans que ens cobrisca de sucre!']
+    },
+    hoax_squirrels: {
+      en: ['ANONYMOUS CALL', 'Forest Takeover', 'Talking squirrels in FOREST seized a loudspeaker tower and demand three tons of walnuts! Evacuate the whole city now!'],
+      es: ['LLAMADA ANÓNIMA', 'Toma del Bosque', '¡Ardillas parlantes en BOSQUE tomaron una torre y exigen tres toneladas de nueces! ¡Evacua toda la ciudad ya!'],
+      va: ['CRIDADA ANÒNIMA', 'Presa del Bosc', 'Esquirols parlants al BOSC han pres una torre i exigeixen tres tones de nous! Evacua tota la ciutat ara!']
+    },
+    hoax_lunch: {
+      en: ['INTERNAL LINE', 'Canteen Emergency', 'The shift boss’s cutlet went missing in INDUSTRIAL! Suspect: Vaska the cat. Sound the S-40 wail and intercept TV immediately!'],
+      es: ['LÍNEA INTERNA', 'Emergencia en comedor', '¡Desapareció el filete del jefe en INDUSTRIAL! Sospechoso: el gato Vaska. ¡Pon la sirena S-40 e interviene la TV ya!'],
+      va: ['LÍNIA INTERNA', 'Emergència al menjador', 'Ha desaparegut el filet del cap a INDUSTRIAL! Sospitós: el gat Vaska. Posa la sirena S-40 i intervé la TV ara!']
+    },
+    hoax_teapots: {
+      en: ['HAM RADIO-99', 'Airport Invasion', 'A fleet of whistling Martian teapots is hovering over AIRPORT! They are boiling to serve tea to controllers! Sound the alarm!'],
+      es: ['RADIOAFICIONADO-99', 'Invasión en Aeropuerto', '¡Una flota de teteras marcianas silbantes sobrevuela AEROPUERTO para servir té a los controladores! ¡Activa la alarma!'],
+      va: ['RADIOAFICIONAT-99', 'Invasió a l’Aeroport', 'Una flota de teteres marcianes xiulants sobrevola l’AEROPORT per servir te als controladors! Activa l’alarma!']
+    },
+    hoax_kraken: {
+      en: ['FISHERMAN PETE', 'Port Monster', 'A 20-meter giant inflatable rubber duck rose from the water in PORT and is quacking loudly! Evacuate everyone immediately!'],
+      es: ['PESCADOR PEDRO', 'Monstruo en el Puerto', '¡Un patito de goma hinchable de 20 metros salió del agua en PUERTO y hace cuac muy fuerte! ¡Evacua a todos ya!'],
+      va: ['PESCADOR PERE', 'Monstre al Port', 'Un aneguet de goma unflable de 20 metres ha eixit de l’aigua al PORT i fa cuac molt fort! Evacua tothom ara!']
+    }
+  };
+
+  // Улучшения
+  const UPGRADES_T = {
+    loud_towers: {
+      en: ['High-Power Voice Towers', '+6 seconds response time and +20% score bonus on successful alerts.'],
+      es: ['Torres de voz potentes', '+6 segundos de tiempo de reacción y +20% puntos por alertas exitosas.'],
+      va: ['Torres de veu potents', '+6 segons de temps de reacció i +20% punts per alertes reeixides.']
+    },
+    satellite_link: {
+      en: ['Satellite Uplink', '50% fewer line breakdowns. Remote Reboot fixes even cut cables!'],
+      es: ['Enlace satelital', '50% menos averías en línea. ¡El reinicio remoto repara incluso cables cortados!'],
+      va: ['Enllaç satel·litari', '50% menys avaries en línia. El reinici remot repara fins i tot cables tallats!']
+    },
+    backup_generator: {
+      en: ['Backup Generator', 'Repair crew arrives twice as fast and storms cannot cut power.'],
+      es: ['Generador de reserva', 'La brigada llega el doble de rápido y las tormentas no cortan la energía.'],
+      va: ['Generador de reserva', 'La brigada arriba el doble de ràpid i les tempestes no tallen l’energia.']
+    },
+    spam_filter: {
+      en: ['Hoax Analyzer (Anti-Spam)', 'Highlights suspicious phrases and marks dubious channels in prank calls.'],
+      es: ['Analizador anti-bulo', 'Resalta frases sospechosas y marca canales dudosos en falsas alarmas.'],
+      va: ['Analitzador anti-faula', 'Ressalta frases sospitoses i marca canals dubtosos en falses alarmes.']
+    },
+    siren_tornado: {
+      en: ['Siren: American Tornado', 'Unlocks the iconic dual-tone Thunderbolt tornado siren on your console.'],
+      es: ['Sirena: Tornado americana', 'Desbloquea el icónico sonido bitonal de sirena de tornado Thunderbolt.'],
+      va: ['Sirena: Tornado americana', 'Desbloqueja l’icònic so bitonal de sirena de tornado Thunderbolt.']
+    },
+    siren_modern: {
+      en: ['Siren: Modern Digital', 'Unlocks the modern electronic SGS-22 digital wail siren.'],
+      es: ['Sirena: Digital moderna', 'Desbloquea la señal electrónica moderna SGS-22 de síntesis limpia.'],
+      va: ['Sirena: Digital moderna', 'Desbloqueja el senyal electrònic modern SGS-22 de síntesi neta.']
+    }
+  };
+
+  // Сложности
+  const DIFF_T = {
+    easy: {
+      en: ['Easy', 'Trainee', '🟢 EASY', '+15s timer, highlighted districts & signal hints, rare glitches (reboot fixes all), gentle panic, ×0.8 score.'],
+      es: ['Fácil', 'Aprendiz', '🟢 FÁCIL', '+15s de tiempo, pistas de distritos y señal, fallos raros (siempre reiniciables), pánico suave, ×0.8 puntos.'],
+      va: ['Fàcil', 'Aprenent', '🟢 FÀCIL', '+15s de temps, pistes de districtes i senyal, fallades rares (sempre reiniciables), pànic suau, ×0.8 punts.']
+    },
+    medium: {
+      en: ['Medium', 'Operator', '🟡 MEDIUM', 'Classic balance: 30–35s timer, glitches & cable cuts, standard penalties and ×1.0 rewards.'],
+      es: ['Medio', 'Operador', '🟡 MEDIO', 'Equilibrio clásico: 30–35s de reacción, fallos y cortes de cable, recompensas ×1.0.'],
+      va: ['Mitjà', 'Operador', '🟡 MITJÀ', 'Equilibri clàssic: 30–35s de reacció, fallades i talls de cable, recompenses ×1.0.']
+    },
+    hard: {
+      en: ['Hard', 'Red Alert', '🔴 HARD', 'Tight 20–22s timer, rapid calls, up to 3 broken towers at once, ×1.35 panic — but ×1.5 score!'],
+      es: ['Difícil', 'Alerta Roja', '🔴 DIFÍCIL', 'Contrarreloj (20–22s), avisos constantes, hasta 3 averías a la vez, pánico ×1.35 — ¡pero ×1.5 puntos!'],
+      va: ['Difícil', 'Alerta Roja', '🔴 DIFÍCIL', 'Contrarellotge (20–22s), avisos constants, fins a 3 avaries alhora, pànic ×1.35 — però ×1.5 punts!']
+    }
+  };
+
+  // Смены
+  const SHIFTS_T = {
+    1: { en: 'SHIFT #1 — Intro Duty', es: 'TURNO Nº1 — Guardia inicial', va: 'TORN NÚM. 1 — Guàrdia inicial' },
+    2: { en: 'SHIFT #2 — Storm Front', es: 'TURNO Nº2 — Frente tormentoso', va: 'TORN NÚM. 2 — Front tempestuós' },
+    3: { en: 'SHIFT #3 — Night Rush', es: 'TURNO Nº3 — Alerta nocturna', va: 'TORN NÚM. 3 — Alerta nocturna' }
+  };
+
+  // ТВ-передачи
+  const TV_T = [
+    { en: ['CH 1', 'CARTOON: "JUST YOU WAIT!"'], es: ['CANAL 1', 'DIBUJOS: «¡YA VERÁS!»'], va: ['CANAL 1', 'DIBUIXOS: «JA VEURÀS!»'] },
+    { en: ['CH 2', 'EVENING NEWS BROADCAST'], es: ['CANAL 2', 'TELEDIARIO — NOTICIAS'], va: ['CANAL 2', 'INFORMATIU — NOTÍCIES'] },
+    { en: ['CH 1', 'TOMORROW WEATHER FORECAST'], es: ['CANAL 1', 'EL TIEMPO PARA MAÑANA'], va: ['CANAL 1', 'EL TEMPS PER A DEMÀ'] },
+    { en: ['CH 3', 'WILDLIFE DOCUMENTARY'], es: ['CANAL 3', 'EN EL MUNDO ANIMAL'], va: ['CANAL 3', 'EN EL MÓN ANIMAL'] }
+  ];
+
+  function loadLang() {
+    try {
+      const saved = localStorage.getItem(LANG_KEY);
+      if (saved && UI[saved]) currentLang = saved;
+    } catch (_) {}
+    document.documentElement.lang = currentLang === 'va' ? 'ca' : currentLang;
+  }
+
+  function setLang(code) {
+    if (!UI[code]) return;
+    currentLang = code;
+    document.documentElement.lang = code === 'va' ? 'ca' : code;
+    try { localStorage.setItem(LANG_KEY, code); } catch (_) {}
+  }
+
+  function getLang() {
+    return currentLang;
+  }
+
+  function getSpeechLang() {
+    const found = LANGS.find((l) => l.code === currentLang);
+    return found ? found.speech : 'ru-RU';
+  }
+
+  function t(key, vars) {
+    let str = (UI[currentLang] && UI[currentLang][key]) || UI.ru[key] || key;
+    if (vars) {
+      Object.keys(vars).forEach((k) => {
+        str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), vars[k]);
+      });
+    }
+    return str;
+  }
+
+  function districtName(id, short = false) {
+    const entry = DISTRICTS_T[id];
+    if (!entry) return id;
+    const pair = entry[currentLang] || entry.ru;
+    return short ? pair[1] : pair[0];
+  }
+
+  function msgBlock(id) {
+    const entry = MSG_BLOCKS_T[id];
+    return entry ? (entry[currentLang] || entry.ru) : id;
+  }
+
+  function incidentText(inc) {
+    if (currentLang === 'ru') return { source: inc.source, title: inc.title, text: inc.text };
+    const entry = INCIDENTS_T[inc.id];
+    if (!entry || !entry[currentLang]) return { source: inc.source, title: inc.title, text: inc.text };
+    const [source, title, text] = entry[currentLang];
+    return { source, title, text };
+  }
+
+  function upgradeText(upg) {
+    if (currentLang === 'ru') return { name: upg.name, desc: upg.desc };
+    const entry = UPGRADES_T[upg.id];
+    if (!entry || !entry[currentLang]) return { name: upg.name, desc: upg.desc };
+    return { name: entry[currentLang][0], desc: entry[currentLang][1] };
+  }
+
+  function diffText(d) {
+    if (currentLang === 'ru') return { name: d.name, subtitle: d.subtitle, badge: d.badge, desc: d.desc };
+    const entry = DIFF_T[d.id];
+    if (!entry || !entry[currentLang]) return { name: d.name, subtitle: d.subtitle, badge: d.badge, desc: d.desc };
+    const [name, subtitle, badge, desc] = entry[currentLang];
+    return { name, subtitle, badge, desc };
+  }
+
+  function shiftTitle(shift) {
+    if (currentLang === 'ru') return shift.title;
+    const entry = SHIFTS_T[shift.number];
+    return (entry && entry[currentLang]) || shift.title;
+  }
+
+  function tvProgram(idx, prog) {
+    if (currentLang === 'ru') return { channel: prog.channel, title: prog.title };
+    const entry = TV_T[idx];
+    if (!entry || !entry[currentLang]) return { channel: prog.channel, title: prog.title };
+    return { channel: entry[currentLang][0], title: entry[currentLang][1] };
+  }
+
+  function applyDom() {
+    document.querySelectorAll('[data-i18n]').forEach((node) => {
+      const key = node.getAttribute('data-i18n');
+      if (key) node.textContent = t(key);
+    });
+  }
+
+  loadLang();
+
+  return {
+    LANGS,
+    getLang,
+    setLang,
+    getSpeechLang,
+    t,
+    districtName,
+    msgBlock,
+    incidentText,
+    upgradeText,
+    diffText,
+    shiftTitle,
+    tvProgram,
+    applyDom
+  };
+})();

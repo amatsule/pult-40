@@ -45,7 +45,7 @@
   function cacheDom() {
     const ids = [
       'alarmLamp', 'difficultyBadge', 'shiftTitle', 'shiftTimer', 'scoreValue', 'panicText', 'panicBar',
-      'handledCount', 'btnSound', 'btnVoice', 'btnUpgrades', 'btnLeaderboard', 'btnAuth', 'btnAdmin', 'btnManual',
+      'handledCount', 'langSelect', 'startLangSelect', 'btnSound', 'btnVoice', 'btnUpgrades', 'btnLeaderboard', 'btnAuth', 'btnAdmin', 'btnManual',
       'hqBanner', 'hqBannerText',
       'cityMap', 'selectedDistrictsText', 'btnClearDistricts',
       'towerDiagPanel', 'diagText', 'diagActions', 'btnRebootTower', 'btnDispatchCrew',
@@ -146,20 +146,28 @@
     updateTowerDiagUI();
   }
 
+  function t(key, vars) {
+    return window.I18N ? window.I18N.t(key, vars) : key;
+  }
+
   function populateMessageBuilder() {
     const { MESSAGE_BLOCKS } = window.GAME_DATA;
-    const fill = (selectEl, list) => {
+    const prev = [el.msgSlot1.value, el.msgSlot2.value, el.msgSlot3.value];
+    const fill = (selectEl, list, prevVal) => {
       selectEl.innerHTML = '';
       list.forEach((item) => {
         const opt = document.createElement('option');
         opt.value = item.id;
-        opt.textContent = item.text;
+        opt.textContent = window.I18N ? window.I18N.msgBlock(item.id) : item.text;
         selectEl.appendChild(opt);
       });
+      if (prevVal && list.some((x) => x.id === prevVal)) {
+        selectEl.value = prevVal;
+      }
     };
-    fill(el.msgSlot1, MESSAGE_BLOCKS.slot1);
-    fill(el.msgSlot2, MESSAGE_BLOCKS.slot2);
-    fill(el.msgSlot3, MESSAGE_BLOCKS.slot3);
+    fill(el.msgSlot1, MESSAGE_BLOCKS.slot1, prev[0]);
+    fill(el.msgSlot2, MESSAGE_BLOCKS.slot2, prev[1]);
+    fill(el.msgSlot3, MESSAGE_BLOCKS.slot3, prev[2]);
     updateMessagePreview();
   }
 
@@ -173,7 +181,7 @@
   function updateMessagePreview() {
     const full = getAssembledMessageText();
     el.msgPreviewText.textContent = full;
-    el.tvTickerText.textContent = `+++ ${full.toUpperCase()} +++ СОХРАНЯЙТЕ ПОРЯДОК! +++`;
+    el.tvTickerText.textContent = `+++ ${full.toUpperCase()} +++ ${t('tickerSuffix')} +++`;
   }
 
   function addLog(text, type = 'info') {
@@ -197,9 +205,14 @@
 
   function updateHUD() {
     const diff = getDiff();
+    const diffT = window.I18N ? window.I18N.diffText(diff) : diff;
     if (el.difficultyBadge) {
-      el.difficultyBadge.textContent = diff.badge;
+      el.difficultyBadge.textContent = diffT.badge;
       el.difficultyBadge.className = `diff-badge diff-${diff.id}`;
+    }
+    const shift = window.GAME_DATA.SHIFTS[state.shiftIndex];
+    if (shift && el.shiftTitle) {
+      el.shiftTitle.textContent = window.I18N ? window.I18N.shiftTitle(shift) : shift.title;
     }
     el.shiftTimer.textContent = formatTime(state.shiftTimeLeft);
     el.scoreValue.textContent = state.score;
@@ -209,12 +222,11 @@
     el.handledCount.textContent = state.handledCount;
 
     if (state.selectedDistricts.length === 0) {
-      el.selectedDistrictsText.textContent = 'НЕТ';
+      el.selectedDistrictsText.textContent = t('noneText');
     } else {
-      const names = state.selectedDistricts.map((id) => {
-        const d = window.GAME_DATA.DISTRICTS.find((x) => x.id === id);
-        return d ? d.name : id;
-      });
+      const names = state.selectedDistricts.map((id) =>
+        window.I18N ? window.I18N.districtName(id, false) : id
+      );
       el.selectedDistrictsText.textContent = names.join(', ');
     }
 
@@ -222,9 +234,12 @@
     const tornadoUnlocked = hasUpgrade('siren_tornado');
     const modernUnlocked = hasUpgrade('siren_modern');
     el.modelTornado.classList.toggle('locked', !tornadoUnlocked);
-    el.modelTornado.textContent = tornadoUnlocked ? '🌪️ Торнадо' : '🔒 Торнадо';
+    el.modelTornado.textContent = tornadoUnlocked ? t('modelTornadoOpen') : t('modelTornadoLock');
     el.modelModern.classList.toggle('locked', !modernUnlocked);
-    el.modelModern.textContent = modernUnlocked ? '📡 Цифровая' : '🔒 Цифровая';
+    el.modelModern.textContent = modernUnlocked ? t('modelModernOpen') : t('modelModernLock');
+
+    el.btnSound.textContent = window.SoundEngine.isMuted() ? t('btnSoundOff') : t('btnSoundOn');
+    el.btnVoice.textContent = window.SoundEngine.isVoiceEnabled() ? t('btnVoiceOn') : t('btnVoiceOff');
     updateKolaAlertUI();
   }
 
@@ -245,7 +260,7 @@
 
   function updateKolaAlertUI() {
     if (!el.kolaSwitchState || !el.kolaTowerStatus || !el.kolaPanel) return;
-    el.kolaSwitchState.textContent = state.kolaAlert ? 'ВКЛ' : 'ВЫКЛ';
+    el.kolaSwitchState.textContent = state.kolaAlert ? t('stateOn') : t('stateOff');
     el.kolaSwitchState.classList.toggle('on', state.kolaAlert);
 
     const broken = getBrokenTowersInDistricts(state.selectedDistricts);
@@ -253,18 +268,18 @@
     el.kolaTowerStatus.classList.remove('ready', 'blocked');
 
     if (state.selectedDistricts.length === 0) {
-      el.kolaTowerStatus.textContent = 'Выберите район на карте для сотовой рассылки';
+      el.kolaTowerStatus.textContent = t('kolaSelectFirst');
       if (state.kolaAlert) el.kolaPanel.classList.add('active-on');
       return;
     }
 
     if (broken.length > 0) {
-      const names = broken.map((t) => t.name).join(', ');
-      el.kolaTowerStatus.textContent = `🔴 НЕТ СВЯЗИ (${names}) — Kola-Alert не сработает! Почините вышку.`;
+      const names = broken.map((tObj) => tObj.name).join(', ');
+      el.kolaTowerStatus.textContent = t('kolaBlocked', { names });
       el.kolaTowerStatus.classList.add('blocked');
       el.kolaPanel.classList.add('blocked');
     } else {
-      el.kolaTowerStatus.textContent = '🟢 Сотовые вышки в зоне в сети — готово к рассылке';
+      el.kolaTowerStatus.textContent = t('kolaReady');
       el.kolaTowerStatus.classList.add('ready');
       if (state.kolaAlert) el.kolaPanel.classList.add('active-on');
     }
@@ -274,13 +289,12 @@
     if (!el.phoneAlertPopup) return;
     const now = new Date();
     const hhmm = now.toTimeString().slice(0, 5);
-    const zoneNames = districtIds.map((id) => {
-      const d = window.GAME_DATA.DISTRICTS.find((x) => x.id === id);
-      return d ? d.shortName : id;
-    });
+    const zoneNames = districtIds.map((id) =>
+      window.I18N ? window.I18N.districtName(id, true) : id
+    );
 
     el.phoneClock.textContent = hhmm;
-    el.phoneAlertZones.textContent = `Зона рассылки: ${zoneNames.join(', ')}`;
+    el.phoneAlertZones.textContent = `${t('phoneZone')} ${zoneNames.join(', ')}`;
     el.phoneAlertText.textContent = messageText;
     el.phoneAlertPopup.classList.remove('hidden');
 
@@ -301,46 +315,46 @@
     if (state.tvIntercept) {
       el.tvNormalView.classList.add('hidden');
       el.tvEmergencyView.classList.remove('hidden');
-      el.tvSwitchState.textContent = 'ВКЛ';
+      el.tvSwitchState.textContent = t('stateOn');
       el.tvSwitchState.classList.add('on');
     } else {
       el.tvNormalView.classList.remove('hidden');
       el.tvEmergencyView.classList.add('hidden');
-      el.tvSwitchState.textContent = 'ВЫКЛ';
+      el.tvSwitchState.textContent = t('stateOff');
       el.tvSwitchState.classList.remove('on');
       const prog = window.GAME_DATA.TV_PROGRAMS[state.tvProgramIndex];
-      el.tvChannel.textContent = prog.channel;
+      const progT = window.I18N ? window.I18N.tvProgram(state.tvProgramIndex, prog) : prog;
+      el.tvChannel.textContent = progT.channel;
       el.tvIcon.textContent = prog.icon;
-      el.tvTitle.textContent = prog.title;
+      el.tvTitle.textContent = progT.title;
       el.tvNormalView.style.background = `linear-gradient(135deg, ${prog.color} 0%, #101c24 100%)`;
     }
   }
 
   function updateTowerDiagUI() {
-    const brokenList = Object.values(state.towers).filter((t) => t.status !== 'ok');
+    const brokenList = Object.values(state.towers).filter((tObj) => tObj.status !== 'ok');
     if (brokenList.length === 0) {
       state.selectedTowerId = null;
       el.towerDiagPanel.className = 'tower-diag ok';
-      el.diagText.textContent = 'ЛИНИЯ СВЯЗИ: ВСЕ 12 ВЫШЕК В СЕТИ (НОРМА)';
+      el.diagText.textContent = t('diagAllOk');
       el.diagActions.classList.add('hidden');
       updateKolaAlertUI();
       return;
     }
 
-    let focus = brokenList.find((t) => t.id === state.selectedTowerId) || brokenList[0];
+    let focus = brokenList.find((tObj) => tObj.id === state.selectedTowerId) || brokenList[0];
     state.selectedTowerId = focus.id;
+    const distLabel = window.I18N ? window.I18N.districtName(focus.districtId, false) : focus.districtName;
 
     el.towerDiagPanel.className = 'tower-diag fault';
     if (focus.status === 'repairing') {
       const pct = Math.round(focus.progress * 100);
-      const label = focus.repairMode === 'reboot' ? 'Перезагрузка' : 'Рембригада в пути';
-      el.diagText.textContent = `⚠ ${focus.name} (${focus.districtName}): ${label} — ${pct}%`;
+      const label = focus.repairMode === 'reboot' ? t('diagRepairReboot') : t('diagRepairCrew');
+      el.diagText.textContent = `⚠ ${focus.name} (${distLabel}): ${label} — ${pct}%`;
       el.diagActions.classList.add('hidden');
     } else {
-      const faultDesc = focus.faultType === 'software'
-        ? 'Сбой контроллера (поможет перезагрузка)'
-        : 'Обрыв кабеля / молния (нужна рембригада)';
-      el.diagText.textContent = `⚠ НЕТ СВЯЗИ: ${focus.name} [${focus.districtName}] — ${faultDesc}`;
+      const faultDesc = focus.faultType === 'software' ? t('faultSoft') : t('faultHard');
+      el.diagText.textContent = `⚠ ${focus.name} [${distLabel}] — ${faultDesc}`;
       el.diagActions.classList.remove('hidden');
     }
     updateKolaAlertUI();
@@ -482,18 +496,19 @@
 
   function renderDispatchCard(inc) {
     const diff = getDiff();
-    let bodyHtml = inc.text;
+    const incT = window.I18N ? window.I18N.incidentText(inc) : inc;
+    let bodyHtml = incT.text;
     let sourceClass = 'dispatch-source';
 
-    // На простом уровне подсвечиваем нужные районы в тексте
+    // На простом уровне подсвечиваем нужные районы в тексте (на всех 4 языках)
     if (diff.showHints && inc.districts && inc.districts.length > 0) {
       const stems = {
-        center: ['ЦЕНТР[А-ЯЁ]*'],
-        factory: ['ЗАВОДСК[А-ЯЁ]*'],
-        port: ['ПОРТ[А-ЯЁ]*'],
-        forest: ['ЛЕСН[А-ЯЁ]*'],
-        residential: ['СПАЛЬН[А-ЯЁ]*'],
-        airport: ['АЭРОПОРТ[А-ЯЁ]*']
+        center: ['ЦЕНТР[А-ЯЁ]*', 'CENTER', 'CENTRO', 'CENTRE'],
+        factory: ['ЗАВОДСК[А-ЯЁ]*', 'INDUSTRIAL'],
+        port: ['ПОРТ[А-ЯЁ]*', 'PORT', 'PUERTO'],
+        forest: ['ЛЕСН[А-ЯЁ]*', 'FOREST', 'BOSQUE', 'BOSC'],
+        residential: ['СПАЛЬН[А-ЯЁ]*', 'RESIDENTIAL', 'RESIDENCIAL'],
+        airport: ['АЭРОПОРТ[А-ЯЁ]*', 'AIRPORT', 'AEROPUERTO', 'AEROPORT']
       };
       inc.districts.forEach((dId) => {
         (stems[dId] || []).forEach((pattern) => {
@@ -515,26 +530,26 @@
     }
 
     const typeHint = inc.type === 'hoax' && hasUpgrade('spam_filter')
-      ? '<span style="color:#ffcf5c">⚠ ПОДОЗРИТЕЛЬНЫЙ КАНАЛ</span>'
-      : '<span>ПРИОРИТЕТ: ВЫСОКИЙ</span>';
+      ? `<span style="color:#ffcf5c">${t('suspiciousChan')}</span>`
+      : `<span>${t('priorityHigh')}</span>`;
 
     let easyHintHtml = '';
     if (diff.showHints) {
       if (inc.type === 'real') {
-        easyHintHtml = '<div class="easy-hint-bar">💡 Подсказка стажёру: 📢 Протяжный ревун + 📺 Перехват ТВ ВКЛ</div>';
+        easyHintHtml = `<div class="easy-hint-bar">${t('hintReal')}</div>`;
       } else if (inc.type === 'drill') {
-        easyHintHtml = '<div class="easy-hint-bar">💡 Подсказка стажёру: 🔔 Короткие гудки + 📺 Перехват ТВ ВЫКЛ</div>';
+        easyHintHtml = `<div class="easy-hint-bar">${t('hintDrill')}</div>`;
       } else if (inc.type === 'hoax') {
-        easyHintHtml = '<div class="easy-hint-bar">💡 Подсказка стажёру: похоже на шутку — нажмите «Отклонить»!</div>';
+        easyHintHtml = `<div class="easy-hint-bar">${t('hintHoax')}</div>`;
       }
     }
 
     el.dispatchContent.innerHTML = `
       <div class="dispatch-meta">
-        <span class="${sourceClass}">${inc.source}</span>
+        <span class="${sourceClass}">${incT.source}</span>
         ${typeHint}
       </div>
-      <div class="dispatch-title">${inc.title}</div>
+      <div class="dispatch-title">${incT.title}</div>
       <div>${bodyHtml}</div>
       ${easyHintHtml}
     `;
@@ -546,12 +561,12 @@
     el.dispatchPanel.classList.remove('urgent');
     el.dispatchPanel.classList.add('standby');
     el.dispatchFooter.classList.add('hidden');
-    el.dispatchTimerLabel.textContent = 'ОЖИДАНИЕ';
+    el.dispatchTimerLabel.textContent = t('waitBadge');
     el.dispatchTimerBar.style.width = '100%';
     el.dispatchTimerBar.style.backgroundColor = 'var(--crt-green)';
     el.dispatchContent.innerHTML = `
       <div class="standby-msg">
-        Линия спокойна. Ожидание следующего донесения...
+        ${t('standbyMsg')}
       </div>
     `;
 
@@ -888,19 +903,20 @@
     window.GAME_DATA.UPGRADES.forEach((upg) => {
       const owned = hasUpgrade(upg.id);
       const canBuy = state.score >= upg.cost;
+      const upgT = window.I18N ? window.I18N.upgradeText(upg) : upg;
 
       const card = document.createElement('div');
       card.className = `upgrade-card ${owned ? 'owned' : ''}`;
       card.innerHTML = `
         <div>
           <div class="upg-head">
-            <span>${upg.icon} ${upg.name}</span>
-            <span style="color:${owned ? '#39ff88' : '#ffb833'}">${owned ? 'УСТАНОВЛЕНО' : upg.cost + ' ★'}</span>
+            <span>${upg.icon} ${upgT.name}</span>
+            <span style="color:${owned ? '#39ff88' : '#ffb833'}">${owned ? t('upgOwned') : upg.cost + ' ★'}</span>
           </div>
-          <p class="upg-desc">${upg.desc}</p>
+          <p class="upg-desc">${upgT.desc}</p>
         </div>
         <button class="hw-btn ${owned ? '' : (canBuy ? 'action-amber' : '')}" ${owned || !canBuy ? 'disabled' : ''}>
-          ${owned ? '✓ В строю' : (canBuy ? 'Купить и установить' : 'Недостаточно очков')}
+          ${owned ? t('upgInService') : (canBuy ? t('upgBuy') : t('upgNoFunds'))}
         </button>
       `;
 
@@ -982,7 +998,7 @@
           state.incidentTimeLeft -= dt;
           const pct = Math.max(0, (state.incidentTimeLeft / state.incidentMaxTime) * 100);
           el.dispatchTimerBar.style.width = `${pct}%`;
-          el.dispatchTimerLabel.textContent = `ОСТАЛОСЬ: ${Math.max(0, state.incidentTimeLeft).toFixed(1)} с`;
+          el.dispatchTimerLabel.textContent = t('timeLeft', { s: Math.max(0, state.incidentTimeLeft).toFixed(1) });
           el.dispatchTimerBar.style.backgroundColor =
             pct > 45 ? 'var(--crt-green)' : (pct > 20 ? 'var(--amber)' : 'var(--red-alert)');
 
@@ -1148,9 +1164,10 @@
     function renderDifficultySelector() {
       el.difficultyButtons.innerHTML = '';
       Object.values(window.GAME_DATA.DIFFICULTIES).forEach((d) => {
+        const dT = window.I18N ? window.I18N.diffText(d) : d;
         const btn = document.createElement('button');
         btn.className = `hw-btn diff-choice-btn diff-${d.id} ${state.difficulty === d.id ? 'active' : ''}`;
-        btn.innerHTML = `${d.badge}<small>${d.subtitle}</small>`;
+        btn.innerHTML = `${dT.badge}<small>${dT.subtitle}</small>`;
         btn.addEventListener('click', () => {
           window.SoundEngine.ensureContext();
           window.SoundEngine.playClick();
@@ -1161,7 +1178,8 @@
         });
         el.difficultyButtons.appendChild(btn);
       });
-      el.difficultyDesc.textContent = getDiff().desc;
+      const curD = getDiff();
+      el.difficultyDesc.textContent = (window.I18N ? window.I18N.diffText(curD) : curD).desc;
     }
     renderDifficultySelector();
 
@@ -1170,23 +1188,64 @@
         window.SoundEngine.playClick();
         el.summaryModal.classList.add('hidden');
         renderDifficultySelector();
+        renderShiftButtons();
         el.startModal.classList.remove('hidden');
       });
     }
 
     // Выбор смены на стартовом экране
-    window.GAME_DATA.SHIFTS.forEach((sh, idx) => {
-      const btn = document.createElement('button');
-      btn.className = `hw-btn shift-choice-btn ${idx === 0 ? 'active' : ''}`;
-      btn.innerHTML = `Смена №${sh.number}<br><small>${Math.round(sh.duration / 60)} мин</small>`;
-      btn.addEventListener('click', () => {
-        state.shiftIndex = idx;
-        el.shiftButtons.querySelectorAll('button').forEach((b, i) => {
-          b.classList.toggle('active', i === idx);
+    function renderShiftButtons() {
+      el.shiftButtons.innerHTML = '';
+      window.GAME_DATA.SHIFTS.forEach((sh, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `hw-btn shift-choice-btn ${idx === state.shiftIndex ? 'active' : ''}`;
+        btn.innerHTML = `${t('shiftNum', { n: sh.number })}<br><small>${t('shiftMin', { m: Math.round(sh.duration / 60) })}</small>`;
+        btn.addEventListener('click', () => {
+          state.shiftIndex = idx;
+          renderShiftButtons();
+          updateHUD();
         });
+        el.shiftButtons.appendChild(btn);
       });
-      el.shiftButtons.appendChild(btn);
+    }
+    renderShiftButtons();
+
+    // Переключение языка (RU / EN / ES / VA)
+    function applyLanguage(langCode) {
+      if (!window.I18N) return;
+      window.I18N.setLang(langCode);
+      if (el.langSelect) el.langSelect.value = langCode;
+      if (el.startLangSelect) el.startLangSelect.value = langCode;
+      window.I18N.applyDom();
+      populateMessageBuilder();
+      renderDifficultySelector();
+      renderShiftButtons();
+      updateTVScreen();
+      updateTowerDiagUI();
+      updateHUD();
+      if (state.activeIncident) {
+        renderDispatchCard(state.activeIncident);
+      } else {
+        el.dispatchTimerLabel.textContent = t('waitBadge');
+        el.dispatchContent.innerHTML = `<div class="standby-msg">${t('standbyMsg')}</div>`;
+      }
+      if (!el.upgradesModal.classList.contains('hidden')) {
+        renderUpgradesModal();
+      }
+      if (!window.CloudService || !window.CloudService.getUser()) {
+        el.btnAuth.textContent = t('btnAuth');
+        if (el.btnStartAuth) el.btnStartAuth.textContent = t('btnAuth');
+      }
+    }
+
+    [el.langSelect, el.startLangSelect].forEach((sel) => {
+      if (!sel) return;
+      sel.addEventListener('change', () => {
+        window.SoundEngine.playClick();
+        applyLanguage(sel.value);
+      });
     });
+    window._applyLanguage = applyLanguage;
 
     el.btnStartShift.addEventListener('click', () => startShift(state.shiftIndex));
 
@@ -1696,8 +1755,12 @@
     initTowers();
     populateMessageBuilder();
     bindEvents();
-    updateTVScreen();
-    updateHUD();
+    if (window.I18N && window._applyLanguage) {
+      window._applyLanguage(window.I18N.getLang());
+    } else {
+      updateTVScreen();
+      updateHUD();
+    }
 
     if (window.CloudService) {
       window.CloudService.init((user, profile) => {

@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="ПУЛЬТ-40" />
   <title>ПУЛЬТ-40 — Симулятор системы оповещения</title>
-  <link rel="stylesheet" href="css/style.css?v=6" />
+  <link rel="stylesheet" href="css/style.css?v=7" />
 </head>
 <body>
   <div class="bunker-shell">
@@ -30,39 +30,45 @@
 
       <div class="telemetry-strip">
         <div class="meter-box">
-          <span class="meter-label">СМЕНА</span>
+          <span class="meter-label" data-i18n="meterShift">СМЕНА</span>
           <span id="shiftTimer" class="meter-value mono-green">05:00</span>
         </div>
         <div class="meter-box">
-          <span class="meter-label">ОЧКИ / БЮДЖЕТ</span>
+          <span class="meter-label" data-i18n="meterScore">ОЧКИ / БЮДЖЕТ</span>
           <span id="scoreValue" class="meter-value mono-amber">0</span>
         </div>
         <div class="meter-box panic-box">
-          <span class="meter-label">ПАНИКА В ГОРОДЕ: <strong id="panicText">0%</strong></span>
+          <span class="meter-label"><span data-i18n="meterPanic">ПАНИКА В ГОРОДЕ:</span> <strong id="panicText">0%</strong></span>
           <div class="panic-track">
             <div id="panicBar" class="panic-fill" style="width: 0%"></div>
           </div>
         </div>
         <div class="meter-box">
-          <span class="meter-label">ВЫЗОВЫ</span>
+          <span class="meter-label" data-i18n="meterCalls">ВЫЗОВЫ</span>
           <span id="handledCount" class="meter-value mono-green">0</span>
         </div>
       </div>
 
       <div class="top-actions">
+        <select id="langSelect" class="hw-btn small-btn lang-select" title="Язык / Language / Idioma">
+          <option value="ru">RU · Русский</option>
+          <option value="en">EN · English</option>
+          <option value="es">ES · Español</option>
+          <option value="va">VA · Valencià</option>
+        </select>
         <button id="btnSound" class="hw-btn small-btn active" title="Включить/выключить звук">🔊 Звук</button>
         <button id="btnVoice" class="hw-btn small-btn active" title="Озвучка громкоговорителя">🗣️ Диктор</button>
-        <button id="btnUpgrades" class="hw-btn small-btn upgrade-btn">🔧 Прокачка</button>
-        <button id="btnLeaderboard" class="hw-btn small-btn">🏆 Лидеры</button>
+        <button id="btnUpgrades" class="hw-btn small-btn upgrade-btn" data-i18n="btnUpgrades">🔧 Прокачка</button>
+        <button id="btnLeaderboard" class="hw-btn small-btn" data-i18n="btnLeaderboard">🏆 Лидеры</button>
         <button id="btnAuth" class="hw-btn small-btn">👤 Войти</button>
-        <button id="btnAdmin" class="hw-btn small-btn admin-btn hidden">🛡️ Админ</button>
-        <button id="btnManual" class="hw-btn small-btn">📖 Регламент</button>
+        <button id="btnAdmin" class="hw-btn small-btn admin-btn hidden" data-i18n="btnAdmin">🛡️ Админ</button>
+        <button id="btnManual" class="hw-btn small-btn" data-i18n="btnManual">📖 Регламент</button>
       </div>
     </header>
 
     <!-- ПРИКАЗ ШТАБА ГО (ГЛОБАЛЬНОЕ ОБЪЯВЛЕНИЕ ОТ АДМИНА) -->
     <div id="hqBanner" class="hq-banner hidden">
-      <span class="hq-banner-tag">📢 ПРИКАЗ ШТАБА ГО:</span>
+      <span class="hq-banner-tag" data-i18n="hqTag">📢 ПРИКАЗ ШТАБА ГО:</span>
       <span id="hqBannerText"></span>
     </div>
 
@@ -71,10 +77,10 @@
       <!-- ЛЕВАЯ КОЛОНКА: CRT-МОНИТОР С КАРТОЙ ГОРОДА -->
       <section class="panel crt-panel">
         <div class="panel-header">
-          <span>🖥️ ЭКРАН АСЦО — КАРТА РАЙОНОВ (6 СЕКТОРОВ)</span>
+          <span data-i18n="mapHeader">🖥️ ЭКРАН АСЦО — КАРТА РАЙОНОВ (6 СЕКТОРОВ)</span>
           <div class="selected-summary">
-            <span>Выбрано: <strong id="selectedDistrictsText">НЕТ</strong></span>
-            <button id="btnClearDistricts" class="mini-link-btn">Сбросить</button>
+            <span><span data-i18n="selectedLabel">Выбрано:</span> <strong id="selectedDistrictsText">НЕТ</strong></span>
+            <button id="btnClearDistricts" class="mini-link-btn" data-i18n="btnClear">Сбросить</button>
           </div>
         </div>
 
@@ -82,9 +88,9 @@
           <canvas id="cityMap"></canvas>
           <div class="crt-scanlines" aria-hidden="true"></div>
           <div class="map-legend">
-            <span><i class="dot dot-green"></i> Вышка в сети</span>
-            <span><i class="dot dot-red"></i> Нет связи (клик для ремонта)</span>
-            <span><i class="dot dot-amber"></i> Выбранный район</span>
+            <span><i class="dot dot-green"></i> <span data-i18n="legendOk">Вышка в сети</span></span>
+            <span><i class="dot dot-red"></i> <span data-i18n="legendBroken">Нет связи (клик для ремонта)</span></span>
+            <span><i class="dot dot-amber"></i> <span data-i18n="legendSelected">Выбранный район</span></span>
           </div>
         </div>
 
@@ -95,16 +101,16 @@
             <div id="diagText">ЛИНИЯ СВЯЗИ: ВСЕ 12 ВЫШЕК В СЕТИ (НОРМА)</div>
           </div>
           <div id="diagActions" class="diag-actions hidden">
-            <button id="btnRebootTower" class="hw-btn action-cyan">🔄 Перезагрузить</button>
-            <button id="btnDispatchCrew" class="hw-btn action-amber">🚐 Рембригада</button>
+            <button id="btnRebootTower" class="hw-btn action-cyan" data-i18n="btnReboot">🔄 Перезагрузить</button>
+            <button id="btnDispatchCrew" class="hw-btn action-amber" data-i18n="btnCrew">🚐 Рембригада</button>
           </div>
         </div>
 
         <!-- ЖУРНАЛ ОПЕРАТОРА -->
         <div class="event-log-box">
-          <div class="log-title">ЖУРНАЛ ДЕЖУРНОГО</div>
+          <div class="log-title" data-i18n="logTitle">ЖУРНАЛ ДЕЖУРНОГО</div>
           <ul id="eventLog" class="event-log-list">
-            <li class="log-info">Система «Пульт-40» готова к дежурству. Нажмите «Заступить на смену».</li>
+            <li class="log-info" data-i18n="logReady">Система «Пульт-40» готова к дежурству. Нажмите «Заступить на смену».</li>
           </ul>
         </div>
       </section>
@@ -114,20 +120,20 @@
         <!-- 1. СРОЧНОЕ ДОНЕСЕНИЕ -->
         <div id="dispatchPanel" class="panel dispatch-panel standby">
           <div class="panel-header">
-            <span>📨 ТЕЛЕТАЙП — ВХОДЯЩЕЕ ДОНЕСЕНИЕ</span>
-            <span id="dispatchTimerLabel" class="timer-badge">ОЖИДАНИЕ</span>
+            <span data-i18n="dispatchHeader">📨 ТЕЛЕТАЙП — ВХОДЯЩЕЕ ДОНЕСЕНИЕ</span>
+            <span id="dispatchTimerLabel" class="timer-badge" data-i18n="waitBadge">ОЖИДАНИЕ</span>
           </div>
           <div class="timer-bar-track">
             <div id="dispatchTimerBar" class="timer-bar-fill" style="width: 100%"></div>
           </div>
           <div id="dispatchContent" class="dispatch-body">
-            <div class="standby-msg">
+            <div class="standby-msg" data-i18n="standbyMsg">
               Линия спокойна. Следите за картой и ждите срочных сообщений...
             </div>
           </div>
           <div id="dispatchFooter" class="dispatch-footer hidden">
-            <span class="hoax-hint">Подозрение на розыгрыш? Не включайте сирену!</span>
-            <button id="btnRejectHoax" class="hw-btn danger-outline">🚫 ОТКЛОНИТЬ (ЛОЖНЫЙ ВЫЗОВ)</button>
+            <span class="hoax-hint" data-i18n="hoaxHint">Подозрение на розыгрыш? Не включайте сирену!</span>
+            <button id="btnRejectHoax" class="hw-btn danger-outline" data-i18n="btnRejectHoax">🚫 ОТКЛОНИТЬ (ЛОЖНЫЙ ВЫЗОВ)</button>
           </div>
         </div>
 
@@ -136,30 +142,30 @@
           <!-- БЛОК СИРЕН -->
           <div class="panel siren-panel">
             <div class="panel-header">
-              <span>🚨 ШАГ 2: СИРЕНЫ («ВНИМАНИЕ ВСЕМ!»)</span>
+              <span data-i18n="sirenHeader">🚨 ШАГ 2: СИРЕНЫ («ВНИМАНИЕ ВСЕМ!»)</span>
             </div>
             <div class="siren-section">
-              <div class="sub-label">ТИП СИГНАЛА:</div>
+              <div class="sub-label" data-i18n="signalType">ТИП СИГНАЛА:</div>
               <div class="btn-group-2">
                 <button id="btnModeLong" class="hw-btn mode-btn active" data-mode="long">
-                  📢 Протяжный ревун
-                  <small>Реальная угроза</small>
+                  <span data-i18n="modeLong">📢 Протяжный ревун</span>
+                  <small data-i18n="modeLongSub">Реальная угроза</small>
                 </button>
                 <button id="btnModeShort" class="hw-btn mode-btn" data-mode="short">
-                  🔔 Короткие гудки
-                  <small>Плановая проверка</small>
+                  <span data-i18n="modeShort">🔔 Короткие гудки</span>
+                  <small data-i18n="modeShortSub">Плановая проверка</small>
                 </button>
               </div>
             </div>
 
             <div class="siren-section">
-              <div class="sub-label">МОДЕЛЬ СИРЕНЫ:</div>
+              <div class="sub-label" data-i18n="sirenModel">МОДЕЛЬ СИРЕНЫ:</div>
               <div class="siren-models">
-                <button class="hw-btn model-btn active" data-model="s40" id="modelS40">С-40 (СССР)</button>
+                <button class="hw-btn model-btn active" data-model="s40" id="modelS40" data-i18n="modelS40">С-40 (СССР)</button>
                 <button class="hw-btn model-btn locked" data-model="tornado" id="modelTornado" title="Откройте в Прокачке">🔒 Торнадо</button>
                 <button class="hw-btn model-btn locked" data-model="modern" id="modelModern" title="Откройте в Прокачке">🔒 Цифровая</button>
               </div>
-              <button id="btnTestSiren" class="mini-test-btn">▶ Прослушать звук сирены</button>
+              <button id="btnTestSiren" class="mini-test-btn" data-i18n="btnTestSiren">▶ Прослушать звук сирены</button>
             </div>
           </div>
 
@@ -167,7 +173,7 @@
           <div class="tv-kola-stack">
             <div class="panel tv-panel">
               <div class="panel-header">
-                <span>📺 ШАГ 4: ПЕРЕХВАТ ТВ И РАДИО</span>
+                <span data-i18n="tvHeader">📺 ШАГ 4: ПЕРЕХВАТ ТВ И РАДИО</span>
               </div>
               <div id="tvScreen" class="tv-screen normal">
                 <div id="tvNormalView" class="tv-normal">
@@ -176,8 +182,8 @@
                   <div id="tvTitle" class="tv-prog-title">МУЛЬТФИЛЬМ: «НУ, ПОГОДИ!»</div>
                 </div>
                 <div id="tvEmergencyView" class="tv-emergency hidden">
-                  <div class="tv-em-header">⚠ ВНИМАНИЕ ВСЕМ! ⚠</div>
-                  <div class="tv-em-sub">ЭКСТРЕННОЕ СООБЩЕНИЕ ГО И ЧС</div>
+                  <div class="tv-em-header" data-i18n="tvEmHeader">⚠ ВНИМАНИЕ ВСЕМ! ⚠</div>
+                  <div class="tv-em-sub" data-i18n="tvEmSub">ЭКСТРЕННОЕ СООБЩЕНИЕ ГО И ЧС</div>
                   <div class="tv-ticker-wrap">
                     <div id="tvTickerText" class="tv-ticker">
                       ВНИМАНИЕ! СЛЕДУЙТЕ УКАЗАНИЯМ ДЕЖУРНОГО ПУЛЬТА-40!
@@ -187,7 +193,7 @@
               </div>
 
               <div class="toggle-row">
-                <span class="toggle-label">ТУМБЛЕР ПЕРЕХВАТА:</span>
+                <span class="toggle-label" data-i18n="tvToggleLabel">ТУМБЛЕР ПЕРЕХВАТА:</span>
                 <label class="hw-toggle" title="Прервать ТВ и радио красной заставкой">
                   <input type="checkbox" id="tvInterceptSwitch" />
                   <span class="toggle-track">
@@ -201,13 +207,13 @@
             <!-- ШАГ 5: СОТОВАЯ РАССЫЛКА KOLA-ALERT -->
             <div id="kolaPanel" class="panel kola-panel">
               <div class="panel-header">
-                <span>📱 ШАГ 5: СОТОВАЯ РАССЫЛКА (KOLA-ALERT)</span>
+                <span data-i18n="kolaHeader">📱 ШАГ 5: СОТОВАЯ РАССЫЛКА (KOLA-ALERT)</span>
               </div>
               <div id="kolaTowerStatus" class="kola-status">
                 Выберите район на карте для сотовой рассылки
               </div>
               <div class="toggle-row">
-                <span class="toggle-label">ТУМБЛЕР KOLA-ALERT:</span>
+                <span class="toggle-label" data-i18n="kolaToggleLabel">ТУМБЛЕР KOLA-ALERT:</span>
                 <label class="hw-toggle" title="Отправить экстренное оповещение на телефоны жителей">
                   <input type="checkbox" id="kolaAlertSwitch" />
                   <span class="toggle-track">
@@ -223,29 +229,29 @@
         <!-- 3. КОНСТРУКТОР СООБЩЕНИЯ ГРОМКОГОВОРИТЕЛЕЙ -->
         <div class="panel message-panel">
           <div class="panel-header">
-            <span>🎙️ ШАГ 3: СООБЩЕНИЕ ДЛЯ ГРОМКОГОВОРИТЕЛЕЙ</span>
+            <span data-i18n="msgHeader">🎙️ ШАГ 3: СООБЩЕНИЕ ДЛЯ ГРОМКОГОВОРИТЕЛЕЙ</span>
           </div>
           <div class="msg-builder-grid">
             <div class="msg-slot">
-              <label for="msgSlot1">1. ХАРАКТЕР УГРОЗЫ:</label>
+              <label for="msgSlot1" data-i18n="slot1Label">1. ХАРАКТЕР УГРОЗЫ:</label>
               <select id="msgSlot1" class="crt-select"></select>
             </div>
             <div class="msg-slot">
-              <label for="msgSlot2">2. ГЛАВНОЕ ДЕЙСТВИЕ:</label>
+              <label for="msgSlot2" data-i18n="slot2Label">2. ГЛАВНОЕ ДЕЙСТВИЕ:</label>
               <select id="msgSlot2" class="crt-select"></select>
             </div>
             <div class="msg-slot">
-              <label for="msgSlot3">3. ДОПОЛНИТЕЛЬНАЯ МЕРА:</label>
+              <label for="msgSlot3" data-i18n="slot3Label">3. ДОПОЛНИТЕЛЬНАЯ МЕРА:</label>
               <select id="msgSlot3" class="crt-select"></select>
             </div>
           </div>
 
           <div class="msg-preview-bar">
-            <span class="preview-tag">ТЕКСТ:</span>
+            <span class="preview-tag" data-i18n="previewTag">ТЕКСТ:</span>
             <span id="msgPreviewText">...</span>
           </div>
 
-          <button id="btnBroadcast" class="launch-btn">
+          <button id="btnBroadcast" class="launch-btn" data-i18n="btnBroadcast">
             📡 В ЭФИР — ЗАПУСТИТЬ ОПОВЕЩЕНИЕ
           </button>
         </div>
@@ -258,39 +264,45 @@
     <div class="modal-box">
       <div class="start-top-row">
         <div>
-          <div class="modal-badge">СЕКРЕТНЫЙ ОБЪЕКТ // БУНКЕР ДЕЖУРНОГО</div>
-          <h1 class="modal-title" style="margin-bottom: 4px;">ПУЛЬТ-40</h1>
+          <div class="modal-badge" data-i18n="startBadge">СЕКРЕТНЫЙ ОБЪЕКТ // БУНКЕР ДЕЖУРНОГО</div>
+          <h1 class="modal-title" style="margin-bottom: 4px;" data-i18n="appTitle">ПУЛЬТ-40</h1>
         </div>
         <div class="start-account-btns">
+          <select id="startLangSelect" class="hw-btn small-btn lang-select" title="Язык / Language / Idioma">
+            <option value="ru">RU · Русский</option>
+            <option value="en">EN · English</option>
+            <option value="es">ES · Español</option>
+            <option value="va">VA · Valencià</option>
+          </select>
           <button id="btnStartAuth" class="hw-btn small-btn action-cyan" type="button">👤 Войти</button>
-          <button id="btnStartLb" class="hw-btn small-btn action-amber" type="button">🏆 Лидеры</button>
-          <button id="btnStartAdmin" class="hw-btn small-btn admin-btn hidden" type="button">🛡️ Админ</button>
+          <button id="btnStartLb" class="hw-btn small-btn action-amber" type="button" data-i18n="btnLeaderboard">🏆 Лидеры</button>
+          <button id="btnStartAdmin" class="hw-btn small-btn admin-btn hidden" type="button" data-i18n="btnAdmin">🛡️ Админ</button>
         </div>
       </div>
-      <p class="modal-desc">
-        Добро пожаловать на пост оперативного дежурного! Вы управляете городской системой оповещения на базе легендарных советских сирен <strong>С-40</strong>.
+      <p class="modal-desc" data-i18n="startDesc">
+        Добро пожаловать на пост оперативного дежурного! Вы управляете городской системой оповещения на базе легендарных советских сирен С-40.
       </p>
 
       <div class="briefing-steps">
-        <div class="b-step"><strong>1. Выберите район(ы)</strong> на карте — не включайте сирену там, где угрозы нет!</div>
-        <div class="b-step"><strong>2. Выберите тип сигнала:</strong> протяжный ревун для угрозы или короткие гудки для проверки.</div>
-        <div class="b-step"><strong>3. Соберите текст</strong> из 3 блоков и нажмите <strong>«В ЭФИР»</strong>.</div>
-        <div class="b-step"><strong>4. Перехватите ТВ/Радио</strong> тумблером при реальной угрозе (при проверке не нужно).</div>
-        <div class="b-step"><strong>⚠ Будьте бдительны:</strong> чините красные вышки («Нет связи») и отклоняйте ложные розыгрыши!</div>
+        <div class="b-step" data-i18n="bStep1">1. Выберите район(ы) на карте — не включайте сирену там, где угрозы нет!</div>
+        <div class="b-step" data-i18n="bStep2">2. Выберите тип сигнала: протяжный ревун для угрозы или короткие гудки для проверки.</div>
+        <div class="b-step" data-i18n="bStep3">3. Соберите текст из 3 блоков и нажмите «В ЭФИР».</div>
+        <div class="b-step" data-i18n="bStep4">4. Перехватите ТВ/Радио и включите Kola-Alert при реальной угрозе (при проверке не нужно).</div>
+        <div class="b-step" data-i18n="bStep5">⚠ Будьте бдительны: чините красные вышки («Нет связи») и отклоняйте ложные розыгрыши!</div>
       </div>
 
       <div class="difficulty-selector">
-        <label>УРОВЕНЬ СЛОЖНОСТИ:</label>
+        <label data-i18n="diffLabel">УРОВЕНЬ СЛОЖНОСТИ:</label>
         <div id="difficultyButtons" class="diff-btn-row"></div>
         <div id="difficultyDesc" class="diff-desc"></div>
       </div>
 
       <div class="shift-selector">
-        <label>ВЫБЕРИТЕ СМЕНУ:</label>
+        <label data-i18n="shiftLabel">ВЫБЕРИТЕ СМЕНУ:</label>
         <div id="shiftButtons" class="shift-btn-row"></div>
       </div>
 
-      <button id="btnStartShift" class="launch-btn start-big-btn">▶ ЗАСТУПИТЬ НА СМЕНУ</button>
+      <button id="btnStartShift" class="launch-btn start-big-btn" data-i18n="btnStartShift">▶ ЗАСТУПИТЬ НА СМЕНУ</button>
     </div>
   </div>
 
@@ -558,23 +570,24 @@
           <span class="phone-alert-tri">⚠️</span>
           <div>
             <div class="phone-alert-brand">KOLA-ALERT</div>
-            <div class="phone-alert-sub">ЭКСТРЕННОЕ ОПОВЕЩЕНИЕ ГО И ЧС</div>
+            <div class="phone-alert-sub" data-i18n="phoneSub">ЭКСТРЕННОЕ ОПОВЕЩЕНИЕ ГО И ЧС</div>
           </div>
         </div>
         <div id="phoneAlertZones" class="phone-alert-zones">Зона: ЦЕНТР</div>
         <div id="phoneAlertText" class="phone-alert-text">
           Внимание! Экстренное сообщение от дежурного «Пульт-40».
         </div>
-        <button id="btnClosePhoneAlert" type="button" class="phone-ack-btn">ОК — ПРИНЯТО</button>
+        <button id="btnClosePhoneAlert" type="button" class="phone-ack-btn" data-i18n="phoneAck">ОК — ПРИНЯТО</button>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/data.js?v=6"></script>
-  <script src="js/audio.js?v=6"></script>
-  <script src="js/cloud.js?v=6"></script>
-  <script src="js/map.js?v=6"></script>
-  <script src="js/game.js?v=6"></script>
+  <script src="js/i18n.js?v=7"></script>
+  <script src="js/data.js?v=7"></script>
+  <script src="js/audio.js?v=7"></script>
+  <script src="js/cloud.js?v=7"></script>
+  <script src="js/map.js?v=7"></script>
+  <script src="js/game.js?v=7"></script>
 </body>
 </html>

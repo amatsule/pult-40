@@ -437,7 +437,7 @@ window.SoundEngine = (function () {
       try {
         window.speechSynthesis.cancel();
         const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'ru-RU';
+        utter.lang = window.I18N ? window.I18N.getSpeechLang() : 'ru-RU';
         utter.rate = 1.08;
         utter.pitch = 0.92;
         utter.volume = 0.85;

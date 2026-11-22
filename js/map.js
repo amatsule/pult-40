@@ -181,7 +181,7 @@ window.CityMap = (function () {
     // Надпись залива
     ctx.fillStyle = 'rgba(77, 210, 255, 0.35)';
     ctx.font = 'italic 11px "Courier New", monospace';
-    ctx.fillText('СЕВЕРНЫЙ ЗАЛИВ', 480, 454);
+    ctx.fillText(window.I18N ? window.I18N.t('mapBay') : 'СЕВЕРНЫЙ ЗАЛИВ', 480, 454);
 
     // Лёгкий радарный луч
     const cx = 330;
@@ -295,12 +295,13 @@ window.CityMap = (function () {
       ctx.font = 'bold 12px "Courier New", monospace';
       ctx.textAlign = 'center';
       ctx.fillStyle = isSelected ? '#ffe07a' : '#8cffbe';
-      ctx.fillText(d.shortName, d.labelPos[0], d.labelPos[1]);
+      const labelShort = window.I18N ? window.I18N.districtName(d.id, true) : d.shortName;
+      ctx.fillText(labelShort, d.labelPos[0], d.labelPos[1]);
 
       if (isSelected) {
         ctx.font = 'bold 9px "Courier New", monospace';
         ctx.fillStyle = '#ffcc33';
-        ctx.fillText('[ ВЫБРАН ]', d.labelPos[0], d.labelPos[1] + 13);
+        ctx.fillText(window.I18N ? window.I18N.t('mapSelected') : '[ ВЫБРАН ]', d.labelPos[0], d.labelPos[1] + 13);
       }
 
       ctx.restore();
@@ -350,7 +351,10 @@ window.CityMap = (function () {
           ctx.font = 'bold 9px "Courier New", monospace';
           ctx.textAlign = 'center';
           ctx.fillStyle = '#7de3ff';
-          ctx.fillText(ts.repairMode === 'reboot' ? 'ПЕРЕЗАГР...' : 'РЕМБРИГАДА', t.x, t.y - 16);
+          const repLbl = ts.repairMode === 'reboot'
+            ? (window.I18N ? window.I18N.t('mapRebooting') : 'ПЕРЕЗАГР...')
+            : (window.I18N ? window.I18N.t('mapCrew') : 'РЕМБРИГАДА');
+          ctx.fillText(repLbl, t.x, t.y - 16);
         } else {
           // ПОЛОМКА: «НЕТ СВЯЗИ» (мигает красным)
           const pulseR = 11 + 5 * Math.abs(Math.sin(now * 0.008));
@@ -372,7 +376,7 @@ window.CityMap = (function () {
           ctx.font = 'bold 9px "Courier New", monospace';
           ctx.textAlign = 'center';
           ctx.fillStyle = '#ff6b6b';
-          ctx.fillText('! НЕТ СВЯЗИ', t.x, t.y - 16);
+          ctx.fillText(window.I18N ? window.I18N.t('mapNoSignal') : '! НЕТ СВЯЗИ', t.x, t.y - 16);
         }
 
         ctx.restore();
@@ -416,7 +420,7 @@ window.CityMap = (function () {
       ctx.save();
       ctx.fillStyle = 'rgba(255, 215, 100, 0.75)';
       ctx.font = 'bold 11px "Courier New", monospace';
-      ctx.fillText('⚡ ГРОЗОВОЙ ФРОНТ — РИСК ПОМЕХ НА ЛИНИИ', 14, HEIGHT - 12);
+      ctx.fillText(window.I18N ? window.I18N.t('mapStormWarn') : '⚡ ГРОЗОВОЙ ФРОНТ — РИСК ПОМЕХ НА ЛИНИИ', 14, HEIGHT - 12);
       ctx.restore();
     }
 
