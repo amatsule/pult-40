@@ -384,41 +384,42 @@
 
   // --- РЕМОНТ ВЫШЕК ---
   function rebootSelectedTower() {
-    const t = state.towers[state.selectedTowerId];
-    if (!t || t.status !== 'broken') return;
+    const tObj = state.towers[state.selectedTowerId];
+    if (!tObj || tObj.status !== 'broken') return;
     window.SoundEngine.playReboot();
 
-    if (t.faultType === 'hardware' && !hasUpgrade('satellite_link')) {
+    if (tObj.faultType === 'hardware' && !hasUpgrade('satellite_link')) {
       window.SoundEngine.playError();
-      addLog(`${t.name}: перезагрузка не помогла (обрыв кабеля)! Отправьте рембригаду.`, 'err');
+      addLog(t('logRebootFail', { name: tObj.name }), 'err');
       return;
     }
 
-    t.status = 'repairing';
-    t.repairMode = 'reboot';
-    t.progress = 0;
-    t.duration = 2.0;
-    addLog(`Запущена дистанционная перезагрузка вышки ${t.name}...`, 'info');
+    tObj.status = 'repairing';
+    tObj.repairMode = 'reboot';
+    tObj.progress = 0;
+    tObj.duration = 2.0;
+    addLog(t('logRebootStart', { name: tObj.name }), 'info');
     updateTowerDiagUI();
   }
 
   function dispatchCrewToTower() {
-    const t = state.towers[state.selectedTowerId];
-    if (!t || t.status !== 'broken') return;
+    const tObj = state.towers[state.selectedTowerId];
+    if (!tObj || tObj.status !== 'broken') return;
     window.SoundEngine.playClick();
-    t.status = 'repairing';
-    t.repairMode = 'crew';
-    t.progress = 0;
-    t.duration = hasUpgrade('backup_generator') ? 2.8 : 5.5;
-    addLog(`Ремонтная бригада выехала на объект ${t.name} (${t.districtName}).`, 'warn');
+    tObj.status = 'repairing';
+    tObj.repairMode = 'crew';
+    tObj.progress = 0;
+    tObj.duration = hasUpgrade('backup_generator') ? 2.8 : 5.5;
+    const distName = window.I18N ? window.I18N.districtName(tObj.districtId, false) : tObj.districtName;
+    addLog(t('logCrewStart', { name: tObj.name, dist: distName }), 'warn');
     updateTowerDiagUI();
   }
 
   function triggerRandomBreakdown(forceStorm = false) {
     const diff = getDiff();
-    const okTowers = Object.values(state.towers).filter((t) => t.status === 'ok');
+    const okTowers = Object.values(state.towers).filter((tObj) => tObj.status === 'ok');
     if (okTowers.length === 0) return;
-    const brokenCount = Object.values(state.towers).filter((t) => t.status !== 'ok').length;
+    const brokenCount = Object.values(state.towers).filter((tObj) => tObj.status !== 'ok').length;
     if (brokenCount >= diff.maxBrokenTowers) return;
 
     const target = okTowers[Math.floor(Math.random() * okTowers.length)];
@@ -434,10 +435,8 @@
     state.selectedTowerId = target.id;
 
     window.SoundEngine.playThunder();
-    addLog(
-      `ПОЛОМКА НА ЛИНИИ! Вышка ${target.name} (${target.districtName}) — «НЕТ СВЯЗИ»!`,
-      'err'
-    );
+    const distName = window.I18N ? window.I18N.districtName(target.districtId, false) : target.districtName;
+    addLog(t('logTowerBroken', { name: target.name, dist: distName }), 'err');
     updateTowerDiagUI();
   }
 
@@ -481,7 +480,8 @@
     renderDispatchCard(inc);
     window.SoundEngine.playAlarmBuzzer();
 
-    addLog(`Срочное донесение от [${inc.source}]: ${inc.title}`, 'warn');
+    const incT = window.I18N ? window.I18N.incidentText(inc) : inc;
+    addLog(t('logIncoming', { source: incT.source, title: incT.title }), 'warn');
 
     // Шанс поломки вышки во время грозового донесения
     if (inc.weatherStorm) {
@@ -584,7 +584,7 @@
     if (!state.running) return;
     const inc = state.activeIncident;
     if (!inc) {
-      addLog('Нет активного донесения! Для проверки звука используйте «Прослушать звук сирены».', 'warn');
+      addLog(t('logNoActive'), 'warn');
       return;
     }
 
@@ -601,7 +601,7 @@
       const hoaxPanic = scalePanic(18);
       state.panic = Math.min(100, state.panic + hoaxPanic);
       state.mistakesCount++;
-      addLog(`ОШИБКА! Это был ЛОЖНЫЙ ВЫЗОВ (розыгрыш)! -70 очков, +${hoaxPanic}% паники.`, 'err');
+      addLog(t('logHoaxFail', { panic: hoaxPanic }), 'err');
       clearActiveIncident();
       scheduleResetControls();
       saveProgress();
@@ -613,7 +613,7 @@
     // Реальная угроза или плановая проверка
     if (state.selectedDistricts.length === 0) {
       window.SoundEngine.playError();
-      addLog('Сначала выберите хотя бы один район на карте!', 'err');
+      addLog(t('logSelectDistrict'), 'err');
       return;
     }
 
@@ -632,12 +632,12 @@
     const extra = state.selectedDistricts.filter((d) => !inc.districts.includes(d));
 
     if (missing.length > 0) {
-      issues.push(`пропущен район (${missing.length})`);
+      issues.push(t('issMissing', { n: missing.length }));
       penaltyPts += missing.length * 45;
       panicAdd += missing.length * 12;
     }
     if (extra.length > 0) {
-      issues.push(`лишняя паника в чужом районе (${extra.length})`);
+      issues.push(t('issExtra', { n: extra.length }));
       penaltyPts += extra.length * 35;
       panicAdd += extra.length * 10;
     }
@@ -647,22 +647,22 @@
     inc.districts.forEach((dId) => {
       const dist = window.GAME_DATA.DISTRICTS.find((x) => x.id === dId);
       if (dist) {
-        dist.towers.forEach((t) => {
-          if (state.towers[t.id] && state.towers[t.id].status !== 'ok') {
+        dist.towers.forEach((tw) => {
+          if (state.towers[tw.id] && state.towers[tw.id].status !== 'ok') {
             brokenInTarget++;
           }
         });
       }
     });
     if (brokenInTarget > 0) {
-      issues.push(`неисправная вышка в зоне оповещения`);
+      issues.push(t('issBrokenTower'));
       penaltyPts += brokenInTarget * 25;
       panicAdd += brokenInTarget * 5;
     }
 
     // 2. Режим сирены
     if (state.sirenMode !== inc.sirenMode) {
-      issues.push(inc.sirenMode === 'long' ? 'нужен протяжный ревун' : 'для проверки нужны короткие гудки');
+      issues.push(inc.sirenMode === 'long' ? t('issNeedLong') : t('issNeedShort'));
       penaltyPts += 35;
       panicAdd += 6;
     }
@@ -674,14 +674,14 @@
       if (chosenMsg[i] !== inc.message[i]) msgWrong++;
     }
     if (msgWrong > 0) {
-      issues.push(`неверный текст сообщения (${msgWrong} бл.)`);
+      issues.push(t('issWrongMsg', { n: msgWrong }));
       penaltyPts += msgWrong * 22;
       panicAdd += msgWrong * 3;
     }
 
     // 4. Перехват ТВ и радио
     if (state.tvIntercept !== inc.tvRequired) {
-      issues.push(inc.tvRequired ? 'не перехвачено ТВ/Радио' : 'зря прервали ТВ во время проверки');
+      issues.push(inc.tvRequired ? t('issNeedTv') : t('issExtraTv'));
       penaltyPts += 35;
       panicAdd += inc.tvRequired ? 8 : 5;
     }
@@ -691,16 +691,19 @@
     if (state.kolaAlert) {
       const brokenSelected = getBrokenTowersInDistricts(state.selectedDistricts);
       if (brokenSelected.length > 0) {
-        const bNames = brokenSelected.map((t) => `${t.name} (${t.districtName})`).join(', ');
-        issues.push('Kola-Alert заблокирован поломкой вышки');
-        addLog(`❌ Kola-Alert НЕ СРАБОТАЛ: нет связи с сотовой вышкой ${bNames}! Почините её на карте.`, 'err');
+        const bNames = brokenSelected.map((tw) => {
+          const dn = window.I18N ? window.I18N.districtName(tw.districtId, false) : tw.districtName;
+          return `${tw.name} (${dn})`;
+        }).join(', ');
+        issues.push(t('issKolaBlocked'));
+        addLog(t('logKolaBlocked', { names: bNames }), 'err');
       } else {
         triggerPhoneKolaAlert(state.selectedDistricts, getAssembledMessageText());
         if (inc.type === 'real') {
           kolaBonus = 30;
-          addLog('📱 Kola-Alert доставлен на телефоны жителей выбранных районов! (+30 бонус)', 'ok');
+          addLog(t('logKolaSent'), 'ok');
         } else {
-          issues.push('зря включили Kola-Alert во время проверки');
+          issues.push(t('issExtraKola'));
           penaltyPts += 15;
           panicAdd += 4;
         }
@@ -721,7 +724,7 @@
       state.shiftScoreEarned += earned;
       state.panic = Math.max(0, state.panic - 5);
       setTimeout(() => window.SoundEngine.playSuccess(), 650);
-      addLog(`ИДЕАЛЬНОЕ ОПОВЕЩЕНИЕ! +${earned} очков (бонус скорости +${speedBonus}).`, 'ok');
+      addLog(t('logPerfect', { pts: earned, speed: speedBonus }), 'ok');
     } else {
       state.mistakesCount++;
       const net = Math.max(10, earned);
@@ -729,7 +732,7 @@
       state.score += net;
       state.shiftScoreEarned += net;
       state.panic = Math.min(100, state.panic + scaledPanic);
-      addLog(`Оповещение с ошибками (+${net} оч., +${scaledPanic}% паники): ${issues.join('; ')}.`, 'warn');
+      addLog(t('logWithErrors', { pts: net, panic: scaledPanic, issues: issues.join('; ') }), 'warn');
     }
 
     clearActiveIncident();
@@ -772,14 +775,15 @@
       state.perfectCount++;
       state.panic = Math.max(0, state.panic - 3);
       window.SoundEngine.playSuccess();
-      addLog(`БРАВО! Ложный вызов «${inc.title}» отклонён. +${reward} очков!`, 'ok');
+      const incT = window.I18N ? window.I18N.incidentText(inc) : inc;
+      addLog(t('logHoaxOk', { title: incT.title, pts: reward }), 'ok');
     } else {
       state.score = Math.max(0, state.score - 80);
       const rejectPanic = scalePanic(22);
       state.panic = Math.min(100, state.panic + rejectPanic);
       state.mistakesCount++;
       window.SoundEngine.playError();
-      addLog(`ТРЕВОГА ПРОПУЩЕНА! Вы отклонили реальное донесение! -80 очков, +${rejectPanic}% паники.`, 'err');
+      addLog(t('logMissedReal', { panic: rejectPanic }), 'err');
     }
 
     clearActiveIncident();
@@ -831,7 +835,9 @@
 
     updateTVScreen();
     updateHUD();
-    addLog(`Заступление на ${shift.title} (режим: ${diff.name}). Удачного дежурства!`, 'ok');
+    const shiftLbl = window.I18N ? window.I18N.shiftTitle(shift) : shift.title;
+    const diffLbl = (window.I18N ? window.I18N.diffText(diff) : diff).name;
+    addLog(t('logShiftStart', { shift: shiftLbl, diff: diffLbl }), 'ok');
   }
 
   function endShift(success) {
@@ -886,7 +892,7 @@
           handledCount: state.handledCount
         }).then((res) => {
           if (res && res.ok) {
-            addLog(`Рекорд смены (+${state.shiftScoreEarned} оч.) отправлен в таблицу лидеров!`, 'ok');
+            addLog(t('logScoreSent', { pts: state.shiftScoreEarned }), 'ok');
           }
         });
       }
@@ -926,7 +932,7 @@
           state.score -= upg.cost;
           state.upgrades.push(upg.id);
           window.SoundEngine.playSuccess();
-          addLog(`Установлено улучшение: ${upg.name}!`, 'ok');
+          addLog(t('logUpgradeBuy', { name: upgT.name }), 'ok');
           saveProgress();
           updateHUD();
           renderUpgradesModal();
@@ -961,19 +967,19 @@
 
         // Обновление ремонта вышек
         let diagChanged = false;
-        Object.values(state.towers).forEach((t) => {
-          if (t.status === 'repairing') {
-            t.progress += dt / t.duration;
+        Object.values(state.towers).forEach((tObj) => {
+          if (tObj.status === 'repairing') {
+            tObj.progress += dt / tObj.duration;
             diagChanged = true;
-            if (t.progress >= 1) {
-              t.status = 'ok';
-              t.progress = 0;
-              t.faultType = null;
-              const pts = t.repairMode === 'reboot' ? 25 : 35;
+            if (tObj.progress >= 1) {
+              tObj.status = 'ok';
+              tObj.progress = 0;
+              tObj.faultType = null;
+              const pts = tObj.repairMode === 'reboot' ? 25 : 35;
               state.score += pts;
               state.shiftScoreEarned += pts;
               window.SoundEngine.playSuccess();
-              addLog(`Вышка ${t.name} восстановлена и снова в сети! (+${pts} оч.)`, 'ok');
+              addLog(t('logTowerFixed', { name: tObj.name, pts }), 'ok');
               saveProgress();
             }
           }
@@ -1005,14 +1011,15 @@
           if (state.incidentTimeLeft <= 0) {
             const inc = state.activeIncident;
             if (inc.type === 'hoax') {
-              addLog('Ложный вызов оборвался сам. Совет: отклоняйте их вручную за бонус!', 'info');
+              addLog(t('logHoaxExpired'), 'info');
             } else {
               state.score = Math.max(0, state.score - 90);
               const timeoutPanic = scalePanic(25);
               state.panic = Math.min(100, state.panic + timeoutPanic);
               state.mistakesCount++;
               window.SoundEngine.playError();
-              addLog(`ВРЕМЯ ВЫШЛО! Вы не успели оповестить город о «${inc.title}»! -90 оч., +${timeoutPanic}% паники.`, 'err');
+              const incT = window.I18N ? window.I18N.incidentText(inc) : inc;
+              addLog(t('logTimeout', { title: incT.title, panic: timeoutPanic }), 'err');
               saveProgress();
               checkPanicGameOver();
             }
@@ -1059,11 +1066,11 @@
       btn.addEventListener('click', () => {
         const model = btn.dataset.model;
         if (model === 'tornado' && !hasUpgrade('siren_tornado')) {
-          addLog('Откройте сирену «Американская торнадо» в меню «Прокачка»!', 'warn');
+          addLog(t('logUnlockTornado'), 'warn');
           return;
         }
         if (model === 'modern' && !hasUpgrade('siren_modern')) {
-          addLog('Откройте «Современную цифровую сирену» в меню «Прокачка»!', 'warn');
+          addLog(t('logUnlockModern'), 'warn');
           return;
         }
         window.SoundEngine.ensureContext();
@@ -1355,7 +1362,7 @@
     el.btnLogout.addEventListener('click', async () => {
       window.SoundEngine.playClick();
       await window.CloudService.signOut();
-      addLog('Вы вышли из облачного аккаунта. Включён локальный режим.', 'info');
+      addLog(t('logSignedOut'), 'info');
       updateAuthModalView();
     });
 
@@ -1734,7 +1741,7 @@
             difficulty: state.difficulty
           });
         }
-        addLog(`Облачный профиль подключён: ${profile.callsign}${isAdm ? ' [АДМИН]' : ''} (${state.score} ★).`, 'ok');
+        addLog(t('logCloudConnected', { name: `${profile.callsign}${isAdm ? ' [ADMIN]' : ''}`, score: state.score }), 'ok');
       } else {
         el.btnAuth.textContent = '👤 Войти';
         el.btnAuth.classList.remove('active');
