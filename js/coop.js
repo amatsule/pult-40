@@ -3,7 +3,10 @@
 window.CoopService = (function () {
   let channel = null;
   let lobbyChannel = null;
+  let lobbySubscribed = false;
   let lobbyCallback = null;
+  let broadcastRooms = {}; // code -> { code, hostName, playersCount, seenAt }
+  let lobbyHeartbeatTimer = null;
   let roomCode = null;
   let role = null; // 'host' | 'guest' | null
   let myPeerId = 'p_' + Math.random().toString(36).slice(2, 10);
@@ -70,25 +73,75 @@ window.CoopService = (function () {
     if (handlers.onPeersChange) handlers.onPeersChange(peers);
   }
 
-  // --- СПИСОК ОТКРЫТЫХ КОМНАТ (БЕЗ ВВОДА КОДА) ---
+  // --- СПИСОК ОТКРЫТЫХ КОМНАТ (PRESENCE + BROADCAST ДЛЯ МГНОВЕННОЙ ВИДИМОСТИ) ---
   function emitLobbyRooms() {
-    if (!lobbyChannel || !lobbyCallback) return;
-    const raw = lobbyChannel.presenceState();
-    const rooms = [];
-    Object.keys(raw).forEach((key) => {
-      const entries = raw[key];
-      if (!entries) return;
-      entries.forEach((entry) => {
-        if (entry && entry.type === 'room' && entry.code) {
-          rooms.push({
-            code: entry.code,
-            hostName: entry.hostName || 'Хост',
-            playersCount: entry.playersCount || 1
-          });
-        }
+    if (!lobbyCallback) return;
+    const now = Date.now();
+    const map = {};
+
+    // 1. Комнаты из Presence
+    if (lobbyChannel) {
+      const raw = lobbyChannel.presenceState();
+      Object.keys(raw).forEach((key) => {
+        const entries = raw[key];
+        if (!entries) return;
+        entries.forEach((entry) => {
+          if (entry && entry.type === 'room' && entry.code) {
+            map[entry.code] = {
+              code: entry.code,
+              hostName: entry.hostName || 'Хост',
+              playersCount: entry.playersCount || 1
+            };
+          }
+        });
       });
+    }
+
+    // 2. Комнаты из Broadcast (свежие за последние 15 сек)
+    Object.keys(broadcastRooms).forEach((code) => {
+      const r = broadcastRooms[code];
+      if (now - r.seenAt > 15000) {
+        delete broadcastRooms[code];
+      } else {
+        map[code] = {
+          code: r.code,
+          hostName: r.hostName || 'Хост',
+          playersCount: r.playersCount || 1
+        };
+      }
     });
-    lobbyCallback(rooms);
+
+    lobbyCallback(Object.values(map));
+  }
+
+  function broadcastMyRoom() {
+    if (!lobbyChannel || !lobbySubscribed || role !== 'host' || !roomCode) return;
+    const payload = {
+      code: roomCode,
+      hostName: myCallsign,
+      playersCount: Math.max(1, peers.length)
+    };
+    try {
+      lobbyChannel.track({ type: 'room', ...payload });
+    } catch (_) {}
+    try {
+      lobbyChannel.send({
+        type: 'broadcast',
+        event: 'room_announce',
+        payload
+      });
+    } catch (_) {}
+  }
+
+  function requestOpenRoomsPing() {
+    if (!lobbyChannel || !lobbySubscribed) return;
+    try {
+      lobbyChannel.send({
+        type: 'broadcast',
+        event: 'who_is_hosting',
+        payload: { from: myPeerId }
+      });
+    } catch (_) {}
   }
 
   function ensureLobbyChannel() {
@@ -97,24 +150,53 @@ window.CoopService = (function () {
     if (lobbyChannel) return lobbyChannel;
 
     const ch = client.channel('pult40-open-rooms', {
-      config: { presence: { key: myPeerId } }
+      config: {
+        broadcast: { self: false },
+        presence: { key: myPeerId }
+      }
     });
+
     ch.on('presence', { event: 'sync' }, emitLobbyRooms);
     ch.on('presence', { event: 'join' }, emitLobbyRooms);
     ch.on('presence', { event: 'leave' }, emitLobbyRooms);
-    ch.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        emitLobbyRooms();
-        if (role === 'host' && roomCode) {
-          ch.track({
-            type: 'room',
-            code: roomCode,
-            hostName: myCallsign,
-            playersCount: Math.max(1, peers.length)
-          });
-        }
+
+    ch.on('broadcast', { event: 'who_is_hosting' }, () => {
+      if (role === 'host' && roomCode) {
+        broadcastMyRoom();
       }
     });
+
+    ch.on('broadcast', { event: 'room_announce' }, ({ payload }) => {
+      if (!payload || !payload.code) return;
+      broadcastRooms[payload.code] = {
+        code: payload.code,
+        hostName: payload.hostName || 'Хост',
+        playersCount: payload.playersCount || 1,
+        seenAt: Date.now()
+      };
+      emitLobbyRooms();
+    });
+
+    ch.on('broadcast', { event: 'room_closed' }, ({ payload }) => {
+      if (payload && payload.code) {
+        delete broadcastRooms[payload.code];
+        emitLobbyRooms();
+      }
+    });
+
+    ch.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        lobbySubscribed = true;
+        emitLobbyRooms();
+        requestOpenRoomsPing();
+        if (role === 'host' && roomCode) {
+          broadcastMyRoom();
+        }
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        lobbySubscribed = false;
+      }
+    });
+
     lobbyChannel = ch;
     return ch;
   }
@@ -127,23 +209,38 @@ window.CoopService = (function () {
       return;
     }
     emitLobbyRooms();
+    requestOpenRoomsPing();
   }
 
   function announceRoomInLobby(code, hostName, count) {
-    const ch = ensureLobbyChannel();
-    if (!ch) return;
-    try {
-      ch.track({
-        type: 'room',
-        code,
-        hostName,
-        playersCount: Math.max(1, count || 1)
-      });
-    } catch (_) {}
+    ensureLobbyChannel();
+    broadcastMyRoom();
+    if (lobbyHeartbeatTimer) clearInterval(lobbyHeartbeatTimer);
+    lobbyHeartbeatTimer = setInterval(() => {
+      if (role === 'host' && roomCode) {
+        broadcastMyRoom();
+      } else {
+        clearInterval(lobbyHeartbeatTimer);
+        lobbyHeartbeatTimer = null;
+      }
+    }, 5000);
   }
 
   async function unannounceRoomInLobby() {
+    if (lobbyHeartbeatTimer) {
+      clearInterval(lobbyHeartbeatTimer);
+      lobbyHeartbeatTimer = null;
+    }
     if (!lobbyChannel) return;
+    if (roomCode && lobbySubscribed) {
+      try {
+        lobbyChannel.send({
+          type: 'broadcast',
+          event: 'room_closed',
+          payload: { code: roomCode }
+        });
+      } catch (_) {}
+    }
     try {
       await lobbyChannel.untrack();
     } catch (_) {}
