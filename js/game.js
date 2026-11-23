@@ -45,11 +45,12 @@
   function cacheDom() {
     const ids = [
       'alarmLamp', 'difficultyBadge', 'shiftTitle', 'shiftTimer', 'scoreValue', 'panicText', 'panicBar',
-      'handledCount', 'langSelect', 'startLangSelect', 'btnSound', 'btnVoice', 'btnUpgrades', 'btnLeaderboard', 'btnAuth', 'btnAdmin', 'btnManual',
+      'handledCount', 'langSelect', 'startLangSelect', 'btnSound', 'btnVoice', 'btnUpgrades', 'btnCoop', 'btnLeaderboard', 'btnAuth', 'btnAdmin', 'btnManual',
       'hqBanner', 'hqBannerText',
       'cityMap', 'selectedDistrictsText', 'btnClearDistricts',
       'towerDiagPanel', 'diagText', 'diagActions', 'btnRebootTower', 'btnDispatchCrew',
-      'eventLog', 'dispatchPanel', 'dispatchTimerLabel', 'dispatchTimerBar',
+      'eventLog', 'coopChatBox', 'coopRoomBadge', 'coopChatMessages', 'coopQuickBtns', 'coopChatForm', 'coopChatInput',
+      'dispatchPanel', 'dispatchTimerLabel', 'dispatchTimerBar',
       'dispatchContent', 'dispatchFooter', 'btnRejectHoax',
       'btnModeLong', 'btnModeShort', 'modelS40', 'modelTornado', 'modelModern', 'btnTestSiren',
       'tvScreen', 'tvNormalView', 'tvEmergencyView', 'tvChannel', 'tvIcon', 'tvTitle',
@@ -57,7 +58,7 @@
       'kolaPanel', 'kolaTowerStatus', 'kolaAlertSwitch', 'kolaSwitchState',
       'phoneAlertPopup', 'phoneAlertFrame', 'phoneClock', 'phoneAlertZones', 'phoneAlertText', 'btnClosePhoneAlert',
       'msgSlot1', 'msgSlot2', 'msgSlot3', 'msgPreviewText', 'btnBroadcast',
-      'startModal', 'btnStartAuth', 'btnStartLb', 'btnStartAdmin', 'difficultyButtons', 'difficultyDesc', 'shiftButtons', 'btnStartShift',
+      'startModal', 'btnStartCoop', 'btnStartAuth', 'btnStartLb', 'btnStartAdmin', 'difficultyButtons', 'difficultyDesc', 'shiftButtons', 'btnStartShift',
       'summaryModal', 'summaryBadge', 'summaryTitle', 'summaryText', 'summaryStats',
       'btnSummaryMenu', 'btnSummaryUpgrades', 'btnNextShift',
       'upgradesModal', 'upgradeBudget', 'upgradesGrid', 'btnCloseUpgrades',
@@ -73,7 +74,10 @@
       'admSpawnReal', 'admSpawnDrill', 'admSpawnHoax', 'admSpawnBreak',
       'admAddScore', 'admResetPanic', 'admFixTowers', 'admFinishShift', 'adminDebugMsg',
       'adminUsersStatus', 'btnAdmRefreshUsers', 'adminUsersBody', 'adminUsersMsg',
-      'adminHqInput', 'btnAdmSaveHq', 'btnAdmClearHq', 'adminHqMsg', 'btnCloseAdmin'
+      'adminHqInput', 'btnAdmSaveHq', 'btnAdmClearHq', 'adminHqMsg', 'btnCloseAdmin',
+      'coopModal', 'coopSetupView', 'coopLobbyView', 'coopCallsignInput', 'btnCoopCreate',
+      'coopCodeInput', 'btnCoopJoin', 'coopSetupMsg', 'coopRoomCodeDisplay', 'btnCopyRoomCode',
+      'coopPeersList', 'coopLobbyHint', 'btnCoopLeave', 'btnCoopStartShift', 'btnCloseCoop'
     ];
     ids.forEach((id) => { el[id] = document.getElementById(id); });
   }
@@ -361,9 +365,14 @@
   }
 
   // --- ВЫБОР РАЙОНОВ И ВЫШЕК НА КАРТЕ ---
-  function onDistrictClick(districtId) {
-    window.SoundEngine.ensureContext();
-    window.SoundEngine.playClick();
+  function onDistrictClick(districtId, fromRemote = false) {
+    if (!fromRemote) {
+      window.SoundEngine.ensureContext();
+      window.SoundEngine.playClick();
+      if (window.CoopService && window.CoopService.isGuest()) {
+        window.CoopService.sendAction('toggle_district', { districtId });
+      }
+    }
     const idx = state.selectedDistricts.indexOf(districtId);
     if (idx >= 0) {
       state.selectedDistricts.splice(idx, 1);
@@ -371,21 +380,30 @@
       state.selectedDistricts.push(districtId);
     }
     updateHUD();
+    if (!fromRemote && window._hostSyncNow) window._hostSyncNow();
   }
 
   function onTowerClick(towerId) {
     window.SoundEngine.ensureContext();
     window.SoundEngine.playClick();
-    const t = state.towers[towerId];
-    if (!t || t.status === 'ok') return;
+    const tObj = state.towers[towerId];
+    if (!tObj || tObj.status === 'ok') return;
     state.selectedTowerId = towerId;
     updateTowerDiagUI();
   }
 
   // --- РЕМОНТ ВЫШЕК ---
-  function rebootSelectedTower() {
-    const tObj = state.towers[state.selectedTowerId];
+  function rebootSelectedTower(overrideTowerId = null, fromRemote = false) {
+    const targetId = overrideTowerId || state.selectedTowerId;
+    const tObj = state.towers[targetId];
     if (!tObj || tObj.status !== 'broken') return;
+
+    if (!fromRemote && window.CoopService && window.CoopService.isGuest()) {
+      window.SoundEngine.playReboot();
+      window.CoopService.sendAction('reboot_tower', { towerId: targetId });
+      return;
+    }
+
     window.SoundEngine.playReboot();
 
     if (tObj.faultType === 'hardware' && !hasUpgrade('satellite_link')) {
@@ -400,11 +418,20 @@
     tObj.duration = 2.0;
     addLog(t('logRebootStart', { name: tObj.name }), 'info');
     updateTowerDiagUI();
+    if (window._hostSyncNow) window._hostSyncNow();
   }
 
-  function dispatchCrewToTower() {
-    const tObj = state.towers[state.selectedTowerId];
+  function dispatchCrewToTower(overrideTowerId = null, fromRemote = false) {
+    const targetId = overrideTowerId || state.selectedTowerId;
+    const tObj = state.towers[targetId];
     if (!tObj || tObj.status !== 'broken') return;
+
+    if (!fromRemote && window.CoopService && window.CoopService.isGuest()) {
+      window.SoundEngine.playClick();
+      window.CoopService.sendAction('crew_tower', { towerId: targetId });
+      return;
+    }
+
     window.SoundEngine.playClick();
     tObj.status = 'repairing';
     tObj.repairMode = 'crew';
@@ -413,6 +440,7 @@
     const distName = window.I18N ? window.I18N.districtName(tObj.districtId, false) : tObj.districtName;
     addLog(t('logCrewStart', { name: tObj.name, dist: distName }), 'warn');
     updateTowerDiagUI();
+    if (window._hostSyncNow) window._hostSyncNow();
   }
 
   function triggerRandomBreakdown(forceStorm = false) {
@@ -438,6 +466,10 @@
     const distName = window.I18N ? window.I18N.districtName(target.districtId, false) : target.districtName;
     addLog(t('logTowerBroken', { name: target.name, dist: distName }), 'err');
     updateTowerDiagUI();
+    if (window._hostSyncNow) window._hostSyncNow();
+    if (window.CoopService && window.CoopService.isHost()) {
+      window.CoopService.sendFx('thunder', {});
+    }
   }
 
   // --- ДОНЕСЕНИЯ ---
@@ -482,6 +514,7 @@
 
     const incT = window.I18N ? window.I18N.incidentText(inc) : inc;
     addLog(t('logIncoming', { source: incT.source, title: incT.title }), 'warn');
+    if (window._hostSyncNow) window._hostSyncNow();
 
     // Шанс поломки вышки во время грозового донесения
     if (inc.weatherStorm) {
@@ -577,9 +610,15 @@
   }
 
   // --- ОБРАБОТКА НАЖАТИЯ «В ЭФИР» ---
-  function handleBroadcast() {
-    window.SoundEngine.ensureContext();
-    window.SoundEngine.playClick();
+  function handleBroadcast(fromRemote = false) {
+    if (!fromRemote) {
+      window.SoundEngine.ensureContext();
+      window.SoundEngine.playClick();
+      if (window.CoopService && window.CoopService.isGuest()) {
+        window.CoopService.sendAction('broadcast', {});
+        return;
+      }
+    }
 
     if (!state.running) return;
     const inc = state.activeIncident;
@@ -618,9 +657,18 @@
     }
 
     // Звук сирены + волны на карте + диктор громкоговорителя
+    const msgText = getAssembledMessageText();
     window.SoundEngine.playSiren(state.sirenModel, state.sirenMode);
     window.CityMap.spawnAcousticWaves(state.selectedDistricts, state.sirenMode);
-    window.SoundEngine.playRadioBroadcast(getAssembledMessageText());
+    window.SoundEngine.playRadioBroadcast(msgText);
+    if (window.CoopService && window.CoopService.isHost()) {
+      window.CoopService.sendFx('siren', {
+        model: state.sirenModel,
+        mode: state.sirenMode,
+        districts: [...state.selectedDistricts],
+        text: msgText
+      });
+    }
 
     // Проверка правильности выполнения всех 4 шагов
     const issues = [];
@@ -699,6 +747,12 @@
         addLog(t('logKolaBlocked', { names: bNames }), 'err');
       } else {
         triggerPhoneKolaAlert(state.selectedDistricts, getAssembledMessageText());
+        if (window.CoopService && window.CoopService.isHost()) {
+          window.CoopService.sendFx('kola', {
+            districts: [...state.selectedDistricts],
+            text: getAssembledMessageText()
+          });
+        }
         if (inc.type === 'real') {
           kolaBonus = 30;
           addLog(t('logKolaSent'), 'ok');
@@ -739,6 +793,7 @@
     scheduleResetControls();
     saveProgress();
     updateHUD();
+    if (window._hostSyncNow) window._hostSyncNow();
     checkPanicGameOver();
   }
 
@@ -760,9 +815,15 @@
   }
 
   // --- ОТКЛОНЕНИЕ ЛОЖНОГО ВЫЗОВА ---
-  function handleRejectHoax() {
-    window.SoundEngine.ensureContext();
-    window.SoundEngine.playClick();
+  function handleRejectHoax(fromRemote = false) {
+    if (!fromRemote) {
+      window.SoundEngine.ensureContext();
+      window.SoundEngine.playClick();
+      if (window.CoopService && window.CoopService.isGuest()) {
+        window.CoopService.sendAction('reject_hoax', {});
+        return;
+      }
+    }
     if (!state.running || !state.activeIncident) return;
 
     const inc = state.activeIncident;
@@ -829,6 +890,7 @@
     el.shiftTitle.textContent = shift.title;
     el.startModal.classList.add('hidden');
     el.summaryModal.classList.add('hidden');
+    if (el.coopModal) el.coopModal.classList.add('hidden');
 
     state.running = true;
     state.paused = false;
@@ -838,6 +900,7 @@
     const shiftLbl = window.I18N ? window.I18N.shiftTitle(shift) : shift.title;
     const diffLbl = (window.I18N ? window.I18N.diffText(diff) : diff).name;
     addLog(t('logShiftStart', { shift: shiftLbl, diff: diffLbl }), 'ok');
+    if (window._hostSyncNow) window._hostSyncNow();
   }
 
   function endShift(success) {
@@ -896,6 +959,11 @@
       }
     }
 
+    if (window.CoopService && window.CoopService.isHost()) {
+      window.CoopService.sendFx('shift_end', { success });
+      if (window._hostSyncNow) window._hostSyncNow();
+    }
+
     el.summaryModal.classList.remove('hidden');
   }
 
@@ -942,12 +1010,32 @@
 
   // --- ГЛАВНЫЙ ЦИКЛ ИГРЫ ---
   let lastTick = performance.now();
+  let coopSyncAccum = 0;
 
   function gameLoop(now) {
     const dt = Math.min(0.1, (now - lastTick) / 1000);
     lastTick = now;
 
     if (state.running && !state.paused) {
+      const isCoopGuest = window.CoopService && window.CoopService.isGuest();
+      const isCoopHost = window.CoopService && window.CoopService.isHost();
+
+      if (isCoopGuest) {
+        // Гость плавно обновляет локальные таймеры, а истину получает от Хоста
+        state.shiftTimeLeft = Math.max(0, state.shiftTimeLeft - dt);
+        if (state.activeIncident) {
+          state.incidentTimeLeft = Math.max(0, state.incidentTimeLeft - dt);
+          const pct = Math.max(0, (state.incidentTimeLeft / state.incidentMaxTime) * 100);
+          el.dispatchTimerBar.style.width = `${pct}%`;
+          el.dispatchTimerLabel.textContent = t('timeLeft', { s: Math.max(0, state.incidentTimeLeft).toFixed(1) });
+          el.dispatchTimerBar.style.backgroundColor =
+            pct > 45 ? 'var(--crt-green)' : (pct > 20 ? 'var(--amber)' : 'var(--red-alert)');
+        }
+        updateHUD();
+        requestAnimationFrame(gameLoop);
+        return;
+      }
+
       // Таймер смены
       state.shiftTimeLeft -= dt;
       if (state.shiftTimeLeft <= 0) {
@@ -955,6 +1043,13 @@
         updateHUD();
         endShift(true);
       } else {
+        if (isCoopHost) {
+          coopSyncAccum += dt;
+          if (coopSyncAccum >= 1.1) {
+            coopSyncAccum = 0;
+            if (window._hostSyncNow) window._hostSyncNow();
+          }
+        }
         // Смена телепередач в обычном режиме
         state.tvProgramTimer += dt;
         if (state.tvProgramTimer >= 12) {
@@ -1043,10 +1138,15 @@
       window.SoundEngine.playClick();
       state.selectedDistricts = [];
       updateHUD();
+      if (window.CoopService && window.CoopService.isGuest()) {
+        window.CoopService.sendAction('clear_districts', {});
+      } else if (window._hostSyncNow) {
+        window._hostSyncNow();
+      }
     });
 
-    el.btnRebootTower.addEventListener('click', rebootSelectedTower);
-    el.btnDispatchCrew.addEventListener('click', dispatchCrewToTower);
+    el.btnRebootTower.addEventListener('click', () => rebootSelectedTower());
+    el.btnDispatchCrew.addEventListener('click', () => dispatchCrewToTower());
 
     // Режим сирены (протяжный / короткие)
     [el.btnModeLong, el.btnModeShort].forEach((btn) => {
@@ -1056,6 +1156,11 @@
         state.sirenMode = btn.dataset.mode;
         el.btnModeLong.classList.toggle('active', state.sirenMode === 'long');
         el.btnModeShort.classList.toggle('active', state.sirenMode === 'short');
+        if (window.CoopService && window.CoopService.isGuest()) {
+          window.CoopService.sendAction('set_siren_mode', { mode: state.sirenMode });
+        } else if (window._hostSyncNow) {
+          window._hostSyncNow();
+        }
       });
     });
 
@@ -1077,6 +1182,11 @@
         [el.modelS40, el.modelTornado, el.modelModern].forEach((b) => {
           b.classList.toggle('active', b.dataset.model === model);
         });
+        if (window.CoopService && window.CoopService.isGuest()) {
+          window.CoopService.sendAction('set_siren_model', { model });
+        } else if (window._hostSyncNow) {
+          window._hostSyncNow();
+        }
       });
     });
 
@@ -1092,6 +1202,11 @@
       window.SoundEngine.playSwitch(state.tvIntercept);
       if (state.tvIntercept) window.SoundEngine.playTvIntercept();
       updateTVScreen();
+      if (window.CoopService && window.CoopService.isGuest()) {
+        window.CoopService.sendAction('set_tv', { val: state.tvIntercept });
+      } else if (window._hostSyncNow) {
+        window._hostSyncNow();
+      }
     });
 
     // Тумблер сотовой рассылки Kola-Alert
@@ -1101,6 +1216,11 @@
         state.kolaAlert = el.kolaAlertSwitch.checked;
         window.SoundEngine.playSwitch(state.kolaAlert);
         updateKolaAlertUI();
+        if (window.CoopService && window.CoopService.isGuest()) {
+          window.CoopService.sendAction('set_kola', { val: state.kolaAlert });
+        } else if (window._hostSyncNow) {
+          window._hostSyncNow();
+        }
       });
     }
 
@@ -1113,15 +1233,20 @@
     }
 
     // Конструктор сообщений
-    [el.msgSlot1, el.msgSlot2, el.msgSlot3].forEach((sel) => {
+    [el.msgSlot1, el.msgSlot2, el.msgSlot3].forEach((sel, idx) => {
       sel.addEventListener('change', () => {
         window.SoundEngine.playClick();
         updateMessagePreview();
+        if (window.CoopService && window.CoopService.isGuest()) {
+          window.CoopService.sendAction('set_msg', { slot: idx, val: sel.value });
+        } else if (window._hostSyncNow) {
+          window._hostSyncNow();
+        }
       });
     });
 
-    el.btnBroadcast.addEventListener('click', handleBroadcast);
-    el.btnRejectHoax.addEventListener('click', handleRejectHoax);
+    el.btnBroadcast.addEventListener('click', () => handleBroadcast(false));
+    el.btnRejectHoax.addEventListener('click', () => handleRejectHoax(false));
 
     // Звук и голос
     el.btnSound.addEventListener('click', () => {
@@ -1765,6 +1890,364 @@
     };
 
     window._applyHqBanner = applyHqBanner;
+
+    // --- СОВМЕСТНАЯ ИГРА (ОБЩИЙ ПУЛЬТ ВДВОЁМ + ЧАТ БУНКЕРА) ---
+    function appendChatLine({ sender, text, ts, isMe = false, isSystem = false }) {
+      if (!el.coopChatMessages) return;
+      const div = document.createElement('div');
+      if (isSystem) {
+        div.className = 'chat-line chat-sys';
+        div.textContent = `• ${text}`;
+      } else {
+        div.className = `chat-line ${isMe ? 'chat-me' : ''}`;
+        const timeStr = ts || new Date().toTimeString().slice(0, 5);
+        div.innerHTML = `<span class="chat-ts">[${escapeHtml(timeStr)}]</span><span class="chat-sender">${escapeHtml(sender)}:</span><span>${escapeHtml(text)}</span>`;
+      }
+      el.coopChatMessages.appendChild(div);
+      while (el.coopChatMessages.children.length > 40) {
+        el.coopChatMessages.removeChild(el.coopChatMessages.firstChild);
+      }
+      el.coopChatMessages.scrollTop = el.coopChatMessages.scrollHeight;
+    }
+
+    function buildCoopSnapshot() {
+      return {
+        running: state.running,
+        shiftIndex: state.shiftIndex,
+        difficulty: state.difficulty,
+        shiftTimeLeft: state.shiftTimeLeft,
+        score: state.score,
+        shiftScoreEarned: state.shiftScoreEarned,
+        panic: state.panic,
+        handledCount: state.handledCount,
+        perfectCount: state.perfectCount,
+        mistakesCount: state.mistakesCount,
+        selectedDistricts: [...state.selectedDistricts],
+        sirenMode: state.sirenMode,
+        sirenModel: state.sirenModel,
+        tvIntercept: state.tvIntercept,
+        kolaAlert: state.kolaAlert,
+        msgSlots: [el.msgSlot1.value, el.msgSlot2.value, el.msgSlot3.value],
+        activeIncidentId: state.activeIncident ? state.activeIncident.id : null,
+        incidentTimeLeft: state.incidentTimeLeft,
+        incidentMaxTime: state.incidentMaxTime,
+        towers: state.towers
+      };
+    }
+
+    function hostSyncNow() {
+      if (window.CoopService && window.CoopService.isHost()) {
+        window.CoopService.sendStateSync(buildCoopSnapshot());
+      }
+    }
+    window._hostSyncNow = hostSyncNow;
+
+    function applyCoopSnapshot(snap) {
+      if (!snap) return;
+      const wasRunning = state.running;
+      state.running = Boolean(snap.running);
+      state.shiftIndex = snap.shiftIndex ?? state.shiftIndex;
+      if (snap.difficulty && window.GAME_DATA.DIFFICULTIES[snap.difficulty]) {
+        state.difficulty = snap.difficulty;
+      }
+      state.shiftTimeLeft = snap.shiftTimeLeft ?? state.shiftTimeLeft;
+      state.score = snap.score ?? state.score;
+      state.shiftScoreEarned = snap.shiftScoreEarned ?? state.shiftScoreEarned;
+      state.panic = snap.panic ?? state.panic;
+      state.handledCount = snap.handledCount ?? state.handledCount;
+      state.perfectCount = snap.perfectCount ?? state.perfectCount;
+      state.mistakesCount = snap.mistakesCount ?? state.mistakesCount;
+      state.selectedDistricts = Array.isArray(snap.selectedDistricts) ? [...snap.selectedDistricts] : [];
+      state.sirenMode = snap.sirenMode || 'long';
+      state.sirenModel = snap.sirenModel || 's40';
+      state.tvIntercept = Boolean(snap.tvIntercept);
+      state.kolaAlert = Boolean(snap.kolaAlert);
+      if (snap.towers) state.towers = snap.towers;
+
+      el.btnModeLong.classList.toggle('active', state.sirenMode === 'long');
+      el.btnModeShort.classList.toggle('active', state.sirenMode === 'short');
+      [el.modelS40, el.modelTornado, el.modelModern].forEach((b) => {
+        b.classList.toggle('active', b.dataset.model === state.sirenModel);
+      });
+      el.tvInterceptSwitch.checked = state.tvIntercept;
+      if (el.kolaAlertSwitch) el.kolaAlertSwitch.checked = state.kolaAlert;
+
+      if (Array.isArray(snap.msgSlots) && snap.msgSlots.length === 3) {
+        el.msgSlot1.value = snap.msgSlots[0];
+        el.msgSlot2.value = snap.msgSlots[1];
+        el.msgSlot3.value = snap.msgSlots[2];
+        updateMessagePreview();
+      }
+
+      if (state.running && !wasRunning) {
+        el.startModal.classList.add('hidden');
+        el.summaryModal.classList.add('hidden');
+        if (el.coopModal) el.coopModal.classList.add('hidden');
+        state.paused = false;
+      }
+
+      const curIncId = state.activeIncident ? state.activeIncident.id : null;
+      if (snap.activeIncidentId !== curIncId) {
+        if (snap.activeIncidentId) {
+          const found = window.GAME_DATA.INCIDENTS.find((x) => x.id === snap.activeIncidentId);
+          if (found) {
+            state.activeIncident = found;
+            state.incidentMaxTime = snap.incidentMaxTime || 30;
+            state.incidentTimeLeft = snap.incidentTimeLeft || state.incidentMaxTime;
+            el.alarmLamp.classList.add('flashing');
+            el.dispatchPanel.classList.remove('standby');
+            el.dispatchPanel.classList.add('urgent');
+            el.dispatchFooter.classList.remove('hidden');
+            renderDispatchCard(found);
+            window.SoundEngine.playAlarmBuzzer();
+          }
+        } else {
+          clearActiveIncident();
+        }
+      } else if (state.activeIncident) {
+        state.incidentMaxTime = snap.incidentMaxTime || state.incidentMaxTime;
+        state.incidentTimeLeft = snap.incidentTimeLeft ?? state.incidentTimeLeft;
+      }
+
+      updateTVScreen();
+      updateTowerDiagUI();
+      updateHUD();
+    }
+
+    function updateCoopUI() {
+      const connected = window.CoopService && window.CoopService.isConnected();
+      const peers = window.CoopService ? window.CoopService.getPeers() : [];
+      const code = window.CoopService ? window.CoopService.getRoomCode() : '';
+
+      if (el.coopChatBox) el.coopChatBox.classList.toggle('hidden', !connected);
+      if (el.btnCoop) {
+        el.btnCoop.classList.toggle('connected', connected);
+        el.btnCoop.textContent = connected ? `👥 #${code} (${peers.length})` : t('btnCoop');
+      }
+      if (el.btnStartCoop) {
+        el.btnStartCoop.classList.toggle('connected', connected);
+        el.btnStartCoop.textContent = connected ? `👥 #${code} (${peers.length})` : t('btnCoop');
+      }
+      if (el.coopRoomBadge && connected) {
+        el.coopRoomBadge.textContent = `#${code} · ${peers.length}/2`;
+      }
+      if (el.coopSetupView && el.coopLobbyView) {
+        el.coopSetupView.classList.toggle('hidden', connected);
+        el.coopLobbyView.classList.toggle('hidden', !connected);
+      }
+      if (connected) {
+        el.coopRoomCodeDisplay.textContent = code;
+        el.coopPeersList.innerHTML = peers.map((p) => {
+          const roleTag = p.role === 'host' ? '[HOST]' : '[CO-OP]';
+          return `<li>🟢 <strong>${escapeHtml(p.callsign)}</strong> <span style="color:#7de3ff">${roleTag}</span></li>`;
+        }).join('');
+        const amHost = window.CoopService.isHost();
+        el.btnCoopStartShift.classList.toggle('hidden', !amHost);
+        el.coopLobbyHint.textContent = amHost ? t('coopHostHint') : t('coopGuestHint');
+      }
+    }
+
+    if (window.CoopService) {
+      window.CoopService.setHandlers({
+        onConnectionChange: (isConn) => {
+          updateCoopUI();
+          if (isConn) {
+            appendChatLine({ text: `Подключено к комнате #${window.CoopService.getRoomCode()}`, isSystem: true });
+          }
+        },
+        onPeersChange: (peers) => {
+          updateCoopUI();
+          if (peers.length >= 2) {
+            window.SoundEngine.playSuccess();
+          }
+        },
+        onGuestJoined: () => {
+          setTimeout(() => hostSyncNow(), 400);
+        },
+        onChat: (msg) => {
+          window.SoundEngine.playClick();
+          appendChatLine({ sender: msg.sender, text: msg.text, ts: msg.ts, isMe: false });
+        },
+        onStateSync: ({ snapshot }) => {
+          if (window.CoopService.isGuest()) {
+            applyCoopSnapshot(snapshot);
+          }
+        },
+        onRemoteFx: ({ fxType, data }) => {
+          if (fxType === 'siren' && data) {
+            window.SoundEngine.playSiren(data.model, data.mode);
+            window.CityMap.spawnAcousticWaves(data.districts || [], data.mode);
+            window.SoundEngine.playRadioBroadcast(data.text || '');
+          } else if (fxType === 'kola' && data) {
+            triggerPhoneKolaAlert(data.districts || [], data.text || '');
+          } else if (fxType === 'thunder') {
+            window.SoundEngine.playThunder();
+          } else if (fxType === 'shift_end' && data) {
+            endShift(Boolean(data.success));
+          }
+        },
+        onRemoteAction: ({ action, data, sender }) => {
+          if (!window.CoopService.isHost()) return;
+          if (action === 'toggle_district' && data.districtId) {
+            onDistrictClick(data.districtId, true);
+            hostSyncNow();
+          } else if (action === 'clear_districts') {
+            state.selectedDistricts = [];
+            updateHUD();
+            hostSyncNow();
+          } else if (action === 'reboot_tower' && data.towerId) {
+            rebootSelectedTower(data.towerId, true);
+          } else if (action === 'crew_tower' && data.towerId) {
+            dispatchCrewToTower(data.towerId, true);
+          } else if (action === 'set_siren_mode' && data.mode) {
+            state.sirenMode = data.mode;
+            el.btnModeLong.classList.toggle('active', state.sirenMode === 'long');
+            el.btnModeShort.classList.toggle('active', state.sirenMode === 'short');
+            hostSyncNow();
+          } else if (action === 'set_siren_model' && data.model) {
+            state.sirenModel = data.model;
+            [el.modelS40, el.modelTornado, el.modelModern].forEach((b) => {
+              b.classList.toggle('active', b.dataset.model === data.model);
+            });
+            hostSyncNow();
+          } else if (action === 'set_tv') {
+            state.tvIntercept = Boolean(data.val);
+            el.tvInterceptSwitch.checked = state.tvIntercept;
+            updateTVScreen();
+            hostSyncNow();
+          } else if (action === 'set_kola') {
+            state.kolaAlert = Boolean(data.val);
+            if (el.kolaAlertSwitch) el.kolaAlertSwitch.checked = state.kolaAlert;
+            updateKolaAlertUI();
+            hostSyncNow();
+          } else if (action === 'set_msg' && typeof data.slot === 'number') {
+            const slots = [el.msgSlot1, el.msgSlot2, el.msgSlot3];
+            if (slots[data.slot]) {
+              slots[data.slot].value = data.val;
+              updateMessagePreview();
+              hostSyncNow();
+            }
+          } else if (action === 'broadcast') {
+            appendChatLine({ text: `${sender} нажал «В ЭФИР»!`, isSystem: true });
+            handleBroadcast(true);
+          } else if (action === 'reject_hoax') {
+            appendChatLine({ text: `${sender} отклонил вызов`, isSystem: true });
+            handleRejectHoax(true);
+          }
+        }
+      });
+    }
+
+    const openCoopModal = () => {
+      window.SoundEngine.playClick();
+      if (el.coopCallsignInput && !el.coopCallsignInput.value.trim()) {
+        const prof = window.CloudService && window.CloudService.getProfile();
+        el.coopCallsignInput.value = (prof && prof.callsign) ? prof.callsign : 'Дежурный';
+      }
+      el.coopSetupMsg.classList.add('hidden');
+      updateCoopUI();
+      el.coopModal.classList.remove('hidden');
+    };
+
+    if (el.btnCoop) el.btnCoop.addEventListener('click', openCoopModal);
+    if (el.btnStartCoop) el.btnStartCoop.addEventListener('click', openCoopModal);
+    if (el.btnCloseCoop) {
+      el.btnCloseCoop.addEventListener('click', () => {
+        window.SoundEngine.playClick();
+        el.coopModal.classList.add('hidden');
+      });
+    }
+
+    if (el.btnCoopCreate) {
+      el.btnCoopCreate.addEventListener('click', async () => {
+        window.SoundEngine.playClick();
+        el.btnCoopCreate.disabled = true;
+        const name = el.coopCallsignInput.value.trim() || 'Хост';
+        const res = await window.CoopService.createRoom(name);
+        el.btnCoopCreate.disabled = false;
+        if (res.error) {
+          el.coopSetupMsg.textContent = res.error;
+          el.coopSetupMsg.className = 'auth-msg err';
+        } else {
+          window.SoundEngine.playSuccess();
+          el.coopChatMessages.innerHTML = '';
+          updateCoopUI();
+        }
+      });
+    }
+
+    if (el.btnCoopJoin) {
+      el.btnCoopJoin.addEventListener('click', async () => {
+        window.SoundEngine.playClick();
+        el.btnCoopJoin.disabled = true;
+        const code = el.coopCodeInput.value.trim();
+        const name = el.coopCallsignInput.value.trim() || 'Напарник';
+        const res = await window.CoopService.joinRoom(code, name);
+        el.btnCoopJoin.disabled = false;
+        if (res.error) {
+          el.coopSetupMsg.textContent = res.error;
+          el.coopSetupMsg.className = 'auth-msg err';
+        } else {
+          window.SoundEngine.playSuccess();
+          el.coopChatMessages.innerHTML = '';
+          updateCoopUI();
+        }
+      });
+    }
+
+    if (el.btnCopyRoomCode) {
+      el.btnCopyRoomCode.addEventListener('click', () => {
+        const code = window.CoopService.getRoomCode();
+        if (code && navigator.clipboard) {
+          navigator.clipboard.writeText(code).catch(() => {});
+          window.SoundEngine.playClick();
+          el.btnCopyRoomCode.textContent = '✓ ' + code;
+          setTimeout(() => { el.btnCopyRoomCode.textContent = t('coopCopyCode'); }, 1500);
+        }
+      });
+    }
+
+    if (el.btnCoopLeave) {
+      el.btnCoopLeave.addEventListener('click', async () => {
+        window.SoundEngine.playClick();
+        await window.CoopService.leaveRoom();
+        updateCoopUI();
+      });
+    }
+
+    if (el.btnCoopStartShift) {
+      el.btnCoopStartShift.addEventListener('click', () => {
+        startShift(state.shiftIndex);
+      });
+    }
+
+    // Отправка сообщений в чат бункера
+    if (el.coopChatForm) {
+      el.coopChatForm.addEventListener('submit', (evt) => {
+        evt.preventDefault();
+        const txt = el.coopChatInput.value.trim();
+        if (!txt) return;
+        const sent = window.CoopService.sendChat(txt);
+        if (sent) {
+          window.SoundEngine.playClick();
+          appendChatLine({ sender: sent.sender, text: sent.text, ts: sent.ts, isMe: true });
+          el.coopChatInput.value = '';
+        }
+      });
+    }
+
+    if (el.coopQuickBtns) {
+      el.coopQuickBtns.querySelectorAll('.quick-chat-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const txt = btn.textContent.trim();
+          const sent = window.CoopService.sendChat(txt);
+          if (sent) {
+            window.SoundEngine.playClick();
+            appendChatLine({ sender: sent.sender, text: sent.text, ts: sent.ts, isMe: true });
+          }
+        });
+      });
+    }
   }
 
   function init() {

@@ -1394,6 +1394,202 @@ canvas {
   z-index: 130;
 }
 
+#coopModal {
+  z-index: 125;
+}
+
+.coop-btn {
+  border-color: #2f8fb3;
+  color: #a6ecff;
+  background: linear-gradient(180deg, #1b4454 0%, #112b36 100%);
+}
+
+.coop-btn.connected {
+  border-color: var(--crt-green);
+  color: var(--crt-green);
+  background: linear-gradient(180deg, #15452b 0%, #0d2b1b 100%);
+}
+
+/* Чат бункера (Кооп) */
+.coop-chat-box {
+  margin-top: 8px;
+  background: #0a1417;
+  border: 1px solid #295261;
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.coop-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #7de3ff;
+}
+
+.coop-room-badge {
+  background: #123340;
+  border: 1px solid #4dd2ff;
+  color: #c2f4ff;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10.5px;
+}
+
+.coop-chat-messages {
+  max-height: 108px;
+  min-height: 46px;
+  overflow-y: auto;
+  background: #071012;
+  border: 1px solid #1b3640;
+  border-radius: 4px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+}
+
+.chat-line {
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.chat-line.chat-sys {
+  color: #7ea3ad;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.chat-line .chat-ts {
+  color: #5e7d87;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  margin-right: 4px;
+}
+
+.chat-line .chat-sender {
+  font-weight: 700;
+  color: var(--amber);
+  margin-right: 5px;
+}
+
+.chat-line.chat-me .chat-sender {
+  color: var(--crt-green);
+}
+
+.coop-quick-btns {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.quick-chat-btn {
+  background: #132830;
+  color: #bfefff;
+  border: 1px solid #2b596b;
+  border-radius: 4px;
+  padding: 4px 7px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.quick-chat-btn:hover {
+  border-color: #4dd2ff;
+  color: #fff;
+}
+
+.coop-chat-form {
+  display: flex;
+  gap: 6px;
+}
+
+.coop-chat-input {
+  padding: 6px 9px;
+  font-size: 14px;
+}
+
+/* Лобби коопа */
+.coop-split-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.coop-option-card {
+  background: #0e171a;
+  border: 1px solid #2c434d;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.coop-opt-title {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: #e6f6ff;
+}
+
+.coop-code-input {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  letter-spacing: 4px;
+  font-weight: 800;
+}
+
+.coop-code-banner {
+  background: #0c1c21;
+  border: 1px solid #3c8aa6;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.coop-big-code {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 6px;
+  color: var(--crt-green);
+  text-shadow: 0 0 12px rgba(57, 255, 136, 0.45);
+}
+
+.coop-peers-box {
+  background: #0d1614;
+  border: 1px solid #273c35;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.coop-peers-list {
+  list-style: none;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .coop-split-box {
+    grid-template-columns: 1fr;
+  }
+}
+
 .admin-btn {
   border-color: #ff4d4d;
   color: #ff9e9e;

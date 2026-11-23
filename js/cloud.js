@@ -14,6 +14,10 @@ window.CloudService = (function () {
     return Boolean(client);
   }
 
+  function getClient() {
+    return client;
+  }
+
   function getUser() {
     return currentUser;
   }
@@ -359,6 +363,7 @@ window.CloudService = (function () {
 
   return {
     isAvailable,
+    getClient,
     getUser,
     getProfile,
     isAdmin,
