@@ -76,7 +76,7 @@
       'adminUsersStatus', 'btnAdmRefreshUsers', 'adminUsersBody', 'adminUsersMsg',
       'adminHqInput', 'btnAdmSaveHq', 'btnAdmClearHq', 'adminHqMsg', 'btnCloseAdmin',
       'coopModal', 'coopSetupView', 'coopLobbyView', 'coopCallsignInput', 'btnCoopCreate',
-      'coopCodeInput', 'btnCoopJoin', 'coopSetupMsg', 'coopRoomCodeDisplay', 'btnCopyRoomCode',
+      'coopCodeInput', 'btnCoopJoin', 'coopOpenRoomsList', 'coopSetupMsg', 'coopRoomCodeDisplay', 'btnCopyRoomCode',
       'coopPeersList', 'coopLobbyHint', 'btnCoopLeave', 'btnCoopStartShift', 'btnCloseCoop'
     ];
     ids.forEach((id) => { el[id] = document.getElementById(id); });
@@ -2138,6 +2138,43 @@
       });
     }
 
+    function renderOpenRooms(rooms) {
+      if (!el.coopOpenRoomsList) return;
+      if (!rooms || rooms.length === 0) {
+        el.coopOpenRoomsList.innerHTML = `<div class="open-room-empty">${t('coopNoOpenRooms')}</div>`;
+        return;
+      }
+      el.coopOpenRoomsList.innerHTML = rooms.map((r) => {
+        const isFull = (r.playersCount || 1) >= 2;
+        return `
+          <div class="open-room-row">
+            <span>🟢 <strong>${escapeHtml(r.hostName)}</strong> <small style="color:#7de3ff">#${escapeHtml(r.code)}</small> · ${r.playersCount || 1}/2</span>
+            <button type="button" class="hw-btn small-btn action-cyan join-open-room-btn" data-rcode="${escapeHtml(r.code)}" ${isFull ? 'disabled' : ''}>
+              ${isFull ? t('coopFull') : t('coopJoinOneClick')}
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      el.coopOpenRoomsList.querySelectorAll('.join-open-room-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          window.SoundEngine.playClick();
+          btn.disabled = true;
+          const name = el.coopCallsignInput.value.trim() || 'Напарник';
+          const res = await window.CoopService.joinRoom(btn.dataset.rcode, name);
+          if (res.error) {
+            btn.disabled = false;
+            el.coopSetupMsg.textContent = res.error;
+            el.coopSetupMsg.className = 'auth-msg err';
+          } else {
+            window.SoundEngine.playSuccess();
+            el.coopChatMessages.innerHTML = '';
+            updateCoopUI();
+          }
+        });
+      });
+    }
+
     const openCoopModal = () => {
       window.SoundEngine.playClick();
       if (el.coopCallsignInput && !el.coopCallsignInput.value.trim()) {
@@ -2147,6 +2184,9 @@
       el.coopSetupMsg.classList.add('hidden');
       updateCoopUI();
       el.coopModal.classList.remove('hidden');
+      if (window.CoopService && !window.CoopService.isConnected()) {
+        window.CoopService.watchOpenRooms(renderOpenRooms);
+      }
     };
 
     if (el.btnCoop) el.btnCoop.addEventListener('click', openCoopModal);

@@ -1584,6 +1584,43 @@ canvas {
   font-size: 13px;
 }
 
+.coop-open-rooms-box {
+  margin-top: 12px;
+  background: #0b1518;
+  border: 1px solid #264954;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.coop-open-rooms-list {
+  margin-top: 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.open-room-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #102026;
+  border: 1px solid #2c5b6b;
+  border-radius: 5px;
+  padding: 7px 10px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+.open-room-empty {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  padding: 4px 0;
+}
+
 @media (max-width: 640px) {
   .coop-split-box {
     grid-template-columns: 1fr;

@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="ПУЛЬТ-40" />
   <title>ПУЛЬТ-40 — Симулятор системы оповещения</title>
-  <link rel="stylesheet" href="css/style.css?v=10" />
+  <link rel="stylesheet" href="css/style.css?v=11" />
 </head>
 <body>
   <div class="bunker-shell">
@@ -635,6 +635,13 @@
             </div>
           </div>
         </div>
+
+        <!-- ЖИВОЙ СПИСОК ОТКРЫТЫХ КОМНАТ (БЕЗ КОДА) -->
+        <div class="coop-open-rooms-box">
+          <div class="meter-label" data-i18n="coopOpenRoomsLbl">🟢 ОТКРЫТЫЕ БУНКЕРЫ (ВХОД В 1 КЛИК БЕЗ КОДА):</div>
+          <div id="coopOpenRoomsList" class="coop-open-rooms-list"></div>
+        </div>
+
         <div id="coopSetupMsg" class="auth-msg hidden" style="margin-top: 10px;"></div>
       </div>
 
@@ -668,12 +675,12 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/i18n.js?v=10"></script>
-  <script src="js/data.js?v=10"></script>
-  <script src="js/audio.js?v=10"></script>
-  <script src="js/cloud.js?v=10"></script>
-  <script src="js/coop.js?v=10"></script>
-  <script src="js/map.js?v=10"></script>
-  <script src="js/game.js?v=10"></script>
+  <script src="js/i18n.js?v=11"></script>
+  <script src="js/data.js?v=11"></script>
+  <script src="js/audio.js?v=11"></script>
+  <script src="js/cloud.js?v=11"></script>
+  <script src="js/coop.js?v=11"></script>
+  <script src="js/map.js?v=11"></script>
+  <script src="js/game.js?v=11"></script>
 </body>
 </html>

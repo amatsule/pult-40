@@ -2,6 +2,8 @@
 
 window.CoopService = (function () {
   let channel = null;
+  let lobbyChannel = null;
+  let lobbyCallback = null;
   let roomCode = null;
   let role = null; // 'host' | 'guest' | null
   let myPeerId = 'p_' + Math.random().toString(36).slice(2, 10);
@@ -62,7 +64,89 @@ window.CoopService = (function () {
     // Сортируем: хост первый
     list.sort((a, b) => (a.role === 'host' ? -1 : b.role === 'host' ? 1 : 0));
     peers = list;
+    if (role === 'host' && roomCode) {
+      announceRoomInLobby(roomCode, myCallsign, peers.length);
+    }
     if (handlers.onPeersChange) handlers.onPeersChange(peers);
+  }
+
+  // --- СПИСОК ОТКРЫТЫХ КОМНАТ (БЕЗ ВВОДА КОДА) ---
+  function emitLobbyRooms() {
+    if (!lobbyChannel || !lobbyCallback) return;
+    const raw = lobbyChannel.presenceState();
+    const rooms = [];
+    Object.keys(raw).forEach((key) => {
+      const entries = raw[key];
+      if (!entries) return;
+      entries.forEach((entry) => {
+        if (entry && entry.type === 'room' && entry.code) {
+          rooms.push({
+            code: entry.code,
+            hostName: entry.hostName || 'Хост',
+            playersCount: entry.playersCount || 1
+          });
+        }
+      });
+    });
+    lobbyCallback(rooms);
+  }
+
+  function ensureLobbyChannel() {
+    const client = window.CloudService && window.CloudService.getClient();
+    if (!client) return null;
+    if (lobbyChannel) return lobbyChannel;
+
+    const ch = client.channel('pult40-open-rooms', {
+      config: { presence: { key: myPeerId } }
+    });
+    ch.on('presence', { event: 'sync' }, emitLobbyRooms);
+    ch.on('presence', { event: 'join' }, emitLobbyRooms);
+    ch.on('presence', { event: 'leave' }, emitLobbyRooms);
+    ch.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        emitLobbyRooms();
+        if (role === 'host' && roomCode) {
+          ch.track({
+            type: 'room',
+            code: roomCode,
+            hostName: myCallsign,
+            playersCount: Math.max(1, peers.length)
+          });
+        }
+      }
+    });
+    lobbyChannel = ch;
+    return ch;
+  }
+
+  function watchOpenRooms(cb) {
+    lobbyCallback = cb;
+    const ch = ensureLobbyChannel();
+    if (!ch) {
+      if (cb) cb([]);
+      return;
+    }
+    emitLobbyRooms();
+  }
+
+  function announceRoomInLobby(code, hostName, count) {
+    const ch = ensureLobbyChannel();
+    if (!ch) return;
+    try {
+      ch.track({
+        type: 'room',
+        code,
+        hostName,
+        playersCount: Math.max(1, count || 1)
+      });
+    } catch (_) {}
+  }
+
+  async function unannounceRoomInLobby() {
+    if (!lobbyChannel) return;
+    try {
+      await lobbyChannel.untrack();
+    } catch (_) {}
   }
 
   async function connectToRoom(code, chosenRole, callsign) {
@@ -146,7 +230,11 @@ window.CoopService = (function () {
 
   async function createRoom(callsign) {
     const code = generateRoomCode();
-    return connectToRoom(code, 'host', callsign);
+    const res = await connectToRoom(code, 'host', callsign);
+    if (res && res.ok) {
+      announceRoomInLobby(code, myCallsign, 1);
+    }
+    return res;
   }
 
   async function joinRoom(code, callsign) {
@@ -155,6 +243,7 @@ window.CoopService = (function () {
 
   async function leaveRoom(silent = false) {
     const client = window.CloudService && window.CloudService.getClient();
+    await unannounceRoomInLobby();
     if (channel && client) {
       try {
         await channel.untrack();
@@ -224,6 +313,7 @@ window.CoopService = (function () {
     createRoom,
     joinRoom,
     leaveRoom,
+    watchOpenRooms,
     sendChat,
     sendAction,
     sendStateSync,

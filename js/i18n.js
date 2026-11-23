@@ -252,7 +252,11 @@ window.I18N = (function () {
       coopLeaveBtn: 'Выйти из комнаты',
       coopStartBtn: '▶ НАЧАТЬ СОВМЕСТНУЮ СМЕНУ',
       coopHostHint: 'Вы — ХОСТ. Дождитесь напарника (или стартуйте сразу) — все действия на пульте будут общими!',
-      coopGuestHint: 'Вы подключены как НАПАРНИК. Ожидайте запуска смены хостом (или управляйте общим пультом сразу после старта).'
+      coopGuestHint: 'Вы подключены как НАПАРНИК. Ожидайте запуска смены хостом (или управляйте общим пультом сразу после старта).',
+      coopOpenRoomsLbl: '🟢 ОТКРЫТЫЕ БУНКЕРЫ (ВХОД В 1 КЛИК БЕЗ КОДА):',
+      coopNoOpenRooms: 'Сейчас нет открытых комнат — создайте первую!',
+      coopJoinOneClick: 'Войти',
+      coopFull: 'Заполнено'
     },
     en: {
       appTitle: 'PULT-40',
@@ -494,7 +498,11 @@ window.I18N = (function () {
       coopLeaveBtn: 'Leave Room',
       coopStartBtn: '▶ START CO-OP SHIFT',
       coopHostHint: 'You are the HOST. Wait for your partner (or start right away) — all console controls are shared!',
-      coopGuestHint: 'Connected as PARTNER. Wait for the host to launch the shift — then operate the shared console together!'
+      coopGuestHint: 'Connected as PARTNER. Wait for the host to launch the shift — then operate the shared console together!',
+      coopOpenRoomsLbl: '🟢 OPEN BUNKERS (1-CLICK JOIN WITHOUT CODE):',
+      coopNoOpenRooms: 'No open rooms right now — create the first one!',
+      coopJoinOneClick: 'Join',
+      coopFull: 'Full'
     },
     es: {
       appTitle: 'PULT-40',
@@ -736,7 +744,11 @@ window.I18N = (function () {
       coopLeaveBtn: 'Salir de la sala',
       coopStartBtn: '▶ INICIAR TURNO COOP',
       coopHostHint: 'Eres el ANFITRIÓN. Espera a tu compañero (o empieza ya) — ¡todos los controles son compartidos!',
-      coopGuestHint: 'Conectado como COMPAÑERO. Espera a que el anfitrión inicie el turno para operar juntos.'
+      coopGuestHint: 'Conectado como COMPAÑERO. Espera a que el anfitrión inicie el turno para operar juntos.',
+      coopOpenRoomsLbl: '🟢 BÚNKERES ABIERTOS (ENTRAR EN 1 CLIC SIN CÓDIGO):',
+      coopNoOpenRooms: 'No hay salas abiertas ahora — ¡crea la primera!',
+      coopJoinOneClick: 'Entrar',
+      coopFull: 'Llena'
     },
     va: {
       appTitle: 'PULT-40',
@@ -978,7 +990,11 @@ window.I18N = (function () {
       coopLeaveBtn: 'Eixir de la sala',
       coopStartBtn: '▶ COMENÇAR TORN COOP',
       coopHostHint: 'Ets l’AMFITRIÓ. Espera el teu company (o comença ja) — tots els controls són compartits!',
-      coopGuestHint: 'Connectat com a COMPANY. Espera que l’amfitrió inicie el torn per operar junts.'
+      coopGuestHint: 'Connectat com a COMPANY. Espera que l’amfitrió inicie el torn per operar junts.',
+      coopOpenRoomsLbl: '🟢 BÚNQUERS OBERTS (ENTRAR EN 1 CLIC SENSE CODI):',
+      coopNoOpenRooms: 'No hi ha sales obertes ara — crea la primera!',
+      coopJoinOneClick: 'Entrar',
+      coopFull: 'Plena'
     }
   };
 
